@@ -1,0 +1,11 @@
+{% set colours = {'never': 'secondary', 'ok': 'green', 'warnings': 'yellow', 'errors': 'orange', 'failed': 'red'} %}
+<span class="badge bg-{{ colours[data.lastStatus]|default('secondary') }}-lt" {{ sylius_test_html_attribute('tmonier-agentic-feeds-status', data.code) }}>{{ ('tmonier_agentic_feeds.status.' ~ data.lastStatus)|trans }}</span>
+{% if data.lastGeneratedAt %}
+    <div class="small text-secondary">{{ 'tmonier_agentic_feeds.ui.generation_summary'|trans({'%date%': data.lastGeneratedAt|date('Y-m-d H:i'), '%items%': data.lastItemCount, '%errors%': data.lastErrorCount, '%warnings%': data.lastWarningCount}) }}</div>
+{% endif %}
+{% if data.staleSince %}
+    <div class="small text-secondary">{{ 'tmonier_agentic_feeds.ui.stale_since'|trans({'%date%': data.staleSince|date('Y-m-d H:i')}) }}</div>
+{% endif %}
+{% if data.lastStatus == 'failed' and data.lastFailure %}
+    <div class="small text-danger">{{ data.lastFailure }}</div>
+{% endif %}

@@ -1,0 +1,8 @@
+{# Item action posting a form with a CSRF token: options.route (route with {id}). #}
+<form action="{{ path(options.route, {'id': data.id}) }}" method="post" class="d-inline" {{ sylius_test_html_attribute('tmonier-agentic-feeds-action', action.name) }}>
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token('tmonier_agentic_feeds_generate_' ~ data.id) }}">
+    <button type="submit" class="btn">
+        {% if action.icon %}{{ ux_icon(action.icon, {'class': 'icon'}) }}{% endif %}
+        {{ action.label|trans }}
+    </button>
+</form>

@@ -1,0 +1,7 @@
+sylius_twig_hooks:
+    hooks:
+        # schema.org Product/Offer (JSON-LD) of the product page; see json_ld in the configuration.
+        'sylius_shop.product.show':
+            tmonier_agentic_feeds_json_ld:
+                template: '@TmonierSyliusAgenticFeedsPlugin/shop/product/json_ld.html.twig'
+                priority: -100

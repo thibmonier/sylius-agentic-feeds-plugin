@@ -1,0 +1,18 @@
+tmonier_agentic_feeds:
+    product_feed:
+        code:
+            unique: 'Deze code is al in gebruik.'
+            not_blank: 'Voer een code in.'
+            regex: 'Gebruik alleen letters, cijfers, "-" en "_".'
+        name:
+            not_blank: 'Voer een naam in.'
+        channel:
+            not_null: 'Kies een kanaal.'
+        access_token:
+            min: 'Het token moet minimaal 16 tekens bevatten.'
+        format:
+            invalid: 'Kies een formaat.'
+        locale:
+            not_in_channel: 'Deze taal is niet ingeschakeld in het kanaal.'
+        currency:
+            not_in_channel: 'Deze valuta is niet beschikbaar in het kanaal.'

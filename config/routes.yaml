@@ -1,0 +1,19 @@
+# Import this file from your application's config/routes:
+#
+# tmonier_sylius_agentic_feeds:
+#     resource: "@TmonierSyliusAgenticFeedsPlugin/config/routes.yaml"
+
+tmonier_agentic_feeds_admin:
+    resource: "@TmonierSyliusAgenticFeedsPlugin/config/routes/admin.yaml"
+    prefix: '/%sylius_admin.path_name%'
+
+# Stable public URLs of the feed files (outside the shop locale prefix).
+tmonier_agentic_feeds_download:
+    path: /feeds/{code}/{role}
+    methods: [GET, HEAD]
+    requirements:
+        code: '[A-Za-z0-9_-]+'
+        role: '[a-z_]+'
+    defaults:
+        _controller: tmonier_agentic_feeds.controller.download
+        role: main

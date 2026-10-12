@@ -1,0 +1,2 @@
+<div>{{ ('tmonier_agentic_feeds.format.' ~ data.format)|trans }}</div>
+<div class="text-secondary small">{{ data.channel.name|default(data.channel.code|default('')) }} · {{ data.localeCode }} · {{ data.currencyCode }}{% if data.countryCode %} · {{ data.countryCode }}{% endif %}</div>

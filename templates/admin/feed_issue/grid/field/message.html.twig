@@ -1,0 +1,2 @@
+{% set field = data.field ? ('tmonier_agentic_feeds.field.' ~ data.field)|trans : '' %}
+{{ ('tmonier_agentic_feeds.issue.' ~ data.code)|trans(data.parameters|merge({'%field%': field})) }}

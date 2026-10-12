@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:gedmo="http://gediminasm.org/schemas/orm/doctrine-extensions-mapping">
+
+    <mapped-superclass name="Tmonier\SyliusAgenticFeedsPlugin\Entity\ProductFeed" table="tmonier_agentic_feed">
+        <id name="id" column="id" type="integer">
+            <generator strategy="AUTO" />
+        </id>
+
+        <field name="code" column="code" type="string" length="64" unique="true" />
+        <field name="name" column="name" type="string" length="255" />
+        <field name="localeCode" column="locale_code" type="string" length="12" />
+        <field name="currencyCode" column="currency_code" type="string" length="3" />
+        <field name="countryCode" column="country_code" type="string" length="2" nullable="true" />
+        <field name="format" column="format" type="string" length="32" />
+        <field name="accessToken" column="access_token" type="string" length="128" nullable="true" />
+        <field name="enabled" column="enabled" type="boolean" />
+        <field name="lastGeneratedAt" column="last_generated_at" type="datetime" nullable="true" />
+        <field name="lastStatus" column="last_status" type="string" length="16" />
+        <field name="lastItemCount" column="last_item_count" type="integer" />
+        <field name="lastErrorCount" column="last_error_count" type="integer" />
+        <field name="lastWarningCount" column="last_warning_count" type="integer" />
+        <field name="lastDurationMs" column="last_duration_ms" type="integer" nullable="true" />
+        <field name="lastFailure" column="last_failure" type="text" nullable="true" />
+        <field name="staleSince" column="stale_since" type="datetime" nullable="true" />
+        <field name="createdAt" column="created_at" type="datetime">
+            <gedmo:timestampable on="create" />
+        </field>
+        <field name="updatedAt" column="updated_at" type="datetime" nullable="true">
+            <gedmo:timestampable on="update" />
+        </field>
+
+        <many-to-one field="channel" target-entity="Sylius\Component\Channel\Model\ChannelInterface">
+            <join-column name="channel_id" referenced-column-name="id" nullable="false" on-delete="CASCADE" />
+        </many-to-one>
+    </mapped-superclass>
+</doctrine-mapping>

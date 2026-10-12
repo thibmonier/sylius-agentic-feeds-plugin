@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<constraint-mapping xmlns="http://symfony.com/schema/dic/constraint-mapping"
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    xsi:schemaLocation="http://symfony.com/schema/dic/constraint-mapping http://symfony.com/schema/dic/services/constraint-mapping-1.0.xsd">
+
+    <class name="Tmonier\SyliusAgenticFeedsPlugin\Entity\ProductFeed">
+        <constraint name="Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity">
+            <option name="fields">code</option>
+            <option name="message">tmonier_agentic_feeds.product_feed.code.unique</option>
+            <option name="groups">sylius</option>
+        </constraint>
+        <constraint name="Tmonier\SyliusAgenticFeedsPlugin\Validation\ValidProductFeed">
+            <option name="groups">sylius</option>
+        </constraint>
+        <property name="code">
+            <constraint name="NotBlank">
+                <option name="message">tmonier_agentic_feeds.product_feed.code.not_blank</option>
+                <option name="groups">sylius</option>
+            </constraint>
+            <constraint name="Length">
+                <option name="max">64</option>
+                <option name="groups">sylius</option>
+            </constraint>
+            <constraint name="Regex">
+                <option name="pattern">/^[A-Za-z0-9_-]+$/</option>
+                <option name="message">tmonier_agentic_feeds.product_feed.code.regex</option>
+                <option name="groups">sylius</option>
+            </constraint>
+        </property>
+        <property name="name">
+            <constraint name="NotBlank">
+                <option name="message">tmonier_agentic_feeds.product_feed.name.not_blank</option>
+                <option name="groups">sylius</option>
+            </constraint>
+            <constraint name="Length">
+                <option name="max">255</option>
+                <option name="groups">sylius</option>
+            </constraint>
+        </property>
+        <property name="channel">
+            <constraint name="NotNull">
+                <option name="message">tmonier_agentic_feeds.product_feed.channel.not_null</option>
+                <option name="groups">sylius</option>
+            </constraint>
+        </property>
+        <property name="accessToken">
+            <constraint name="Length">
+                <option name="min">16</option>
+                <option name="max">128</option>
+                <option name="minMessage">tmonier_agentic_feeds.product_feed.access_token.min</option>
+                <option name="groups">sylius</option>
+            </constraint>
+        </property>
+    </class>
+</constraint-mapping>

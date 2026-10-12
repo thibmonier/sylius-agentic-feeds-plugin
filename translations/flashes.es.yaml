@@ -1,0 +1,3 @@
+tmonier_agentic_feeds:
+    flash:
+        generation_requested: 'Se ha solicitado la generación del feed.'

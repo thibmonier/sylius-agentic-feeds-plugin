@@ -1,0 +1,18 @@
+tmonier_agentic_feeds:
+    product_feed:
+        code:
+            unique: 'Ten kod jest już używany.'
+            not_blank: 'Wprowadź kod.'
+            regex: 'Używaj tylko liter, cyfr, "-" i "_".'
+        name:
+            not_blank: 'Wprowadź nazwę.'
+        channel:
+            not_null: 'Wybierz kanał.'
+        access_token:
+            min: 'Token musi mieć co najmniej 16 znaków.'
+        format:
+            invalid: 'Wybierz format.'
+        locale:
+            not_in_channel: 'Ten język nie jest włączony w kanale.'
+        currency:
+            not_in_channel: 'Ta waluta nie jest dostępna w kanale.'

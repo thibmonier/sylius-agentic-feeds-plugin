@@ -1,0 +1,5 @@
+{% for role, url in tmonier_agentic_feeds_file_urls(data) %}
+    <div><a href="{{ url }}" target="_blank" rel="noopener" {{ sylius_test_html_attribute('tmonier-agentic-feeds-file', role) }}>{{ ('tmonier_agentic_feeds.file.' ~ role)|trans }}</a></div>
+{% else %}
+    <span class="text-secondary">{{ 'tmonier_agentic_feeds.ui.not_generated'|trans }}</span>
+{% endfor %}

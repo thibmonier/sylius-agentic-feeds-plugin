@@ -1,0 +1,18 @@
+{% set form = hookable_metadata.context.form %}
+
+<div class="row">
+    <div class="col-12 col-md-4">{{ form_row(form.code) }}</div>
+    <div class="col-12 col-md-6">{{ form_row(form.name) }}</div>
+    <div class="col-12 col-md-2 pt-md-4">{{ form_row(form.enabled) }}</div>
+</div>
+<div class="row">
+    <div class="col-12 col-md-6">{{ form_row(form.format) }}</div>
+    <div class="col-12 col-md-6">{{ form_row(form.channel) }}</div>
+</div>
+<div class="row">
+    <div class="col-12 col-md-4">{{ form_row(form.localeCode) }}</div>
+    <div class="col-12 col-md-4">{{ form_row(form.currencyCode) }}</div>
+    <div class="col-12 col-md-4">{{ form_row(form.countryCode) }}</div>
+</div>
+{{ form_row(form.accessToken) }}
+<p class="text-secondary small mb-0">{{ 'tmonier_agentic_feeds.form.disclaimer'|trans }}</p>

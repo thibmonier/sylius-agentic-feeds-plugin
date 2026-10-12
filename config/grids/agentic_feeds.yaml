@@ -1,0 +1,129 @@
+sylius_grid:
+    templates:
+        action:
+            tmonier_agentic_feeds_post: '@TmonierSyliusAgenticFeedsPlugin/admin/grid/action/post.html.twig'
+    grids:
+        tmonier_agentic_feeds_admin_product_feed:
+            driver:
+                name: doctrine/orm
+                options:
+                    class: "%tmonier_agentic_feeds.model.product_feed.class%"
+            sorting:
+                code: asc
+            fields:
+                code:
+                    type: string
+                    label: sylius.ui.code
+                    sortable: ~
+                name:
+                    type: string
+                    label: sylius.ui.name
+                    sortable: ~
+                target:
+                    type: twig
+                    label: tmonier_agentic_feeds.ui.target
+                    path: .
+                    options:
+                        template: "@TmonierSyliusAgenticFeedsPlugin/admin/product_feed/grid/field/target.html.twig"
+                status:
+                    type: twig
+                    label: tmonier_agentic_feeds.ui.last_generation
+                    path: .
+                    options:
+                        template: "@TmonierSyliusAgenticFeedsPlugin/admin/product_feed/grid/field/status.html.twig"
+                files:
+                    type: twig
+                    label: tmonier_agentic_feeds.ui.files
+                    path: .
+                    options:
+                        template: "@TmonierSyliusAgenticFeedsPlugin/admin/product_feed/grid/field/files.html.twig"
+                enabled:
+                    type: twig
+                    label: sylius.ui.enabled
+                    sortable: ~
+                    options:
+                        template: "@SyliusAdmin/shared/grid/field/boolean.html.twig"
+            filters:
+                search:
+                    type: string
+                    label: sylius.ui.search
+                    options:
+                        fields: [code, name]
+                enabled:
+                    type: boolean
+                    label: sylius.ui.enabled
+            actions:
+                main:
+                    create:
+                        type: create
+                item:
+                    generate:
+                        type: tmonier_agentic_feeds_post
+                        label: tmonier_agentic_feeds.ui.generate_now
+                        icon: tabler:refresh
+                        options:
+                            route: tmonier_agentic_feeds_admin_product_feed_generate
+                    issues:
+                        type: show
+                        label: tmonier_agentic_feeds.ui.issues
+                        icon: tabler:list-check
+                        options:
+                            link:
+                                route: tmonier_agentic_feeds_admin_feed_issue_index
+                                parameters:
+                                    criteria:
+                                        feed: resource.id
+                    update:
+                        type: update
+                    delete:
+                        type: delete
+
+        tmonier_agentic_feeds_admin_feed_issue:
+            driver:
+                name: doctrine/orm
+                options:
+                    class: "%tmonier_agentic_feeds.model.feed_issue.class%"
+            sorting:
+                severity: asc
+            limits: [50, 100, 250]
+            fields:
+                severity:
+                    type: twig
+                    label: tmonier_agentic_feeds.ui.severity
+                    sortable: ~
+                    path: .
+                    options:
+                        template: "@TmonierSyliusAgenticFeedsPlugin/admin/feed_issue/grid/field/severity.html.twig"
+                itemId:
+                    type: string
+                    label: tmonier_agentic_feeds.ui.item
+                    sortable: ~
+                productCode:
+                    type: string
+                    label: sylius.ui.product
+                    sortable: ~
+                message:
+                    type: twig
+                    label: tmonier_agentic_feeds.ui.issue
+                    path: .
+                    options:
+                        template: "@TmonierSyliusAgenticFeedsPlugin/admin/feed_issue/grid/field/message.html.twig"
+            filters:
+                feed:
+                    type: entity
+                    label: tmonier_agentic_feeds.ui.feed
+                    form_options:
+                        class: "%tmonier_agentic_feeds.model.product_feed.class%"
+                        choice_label: name
+                severity:
+                    type: select
+                    label: tmonier_agentic_feeds.ui.severity
+                    form_options:
+                        choices:
+                            tmonier_agentic_feeds.severity.error: error
+                            tmonier_agentic_feeds.severity.warning: warning
+                search:
+                    type: string
+                    label: sylius.ui.search
+                    options:
+                        fields: [itemId, productCode, code]

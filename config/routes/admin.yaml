@@ -1,0 +1,37 @@
+tmonier_agentic_feeds_admin_product_feed:
+    resource: |
+        alias: tmonier_agentic_feeds.product_feed
+        section: admin
+        templates: "@SyliusAdmin\\shared\\crud"
+        except: ['show']
+        redirect: index
+        grid: tmonier_agentic_feeds_admin_product_feed
+        form:
+            type: Tmonier\SyliusAgenticFeedsPlugin\Form\Type\ProductFeedType
+        permission: true
+        path: product-feeds
+        vars:
+            all:
+                hook_prefix: tmonier_agentic_feeds_admin.product_feed
+    type: sylius.resource
+
+tmonier_agentic_feeds_admin_product_feed_generate:
+    path: /product-feeds/{id}/generate
+    methods: [POST]
+    requirements:
+        id: '\d+'
+    defaults:
+        _controller: tmonier_agentic_feeds.controller.admin_generate
+
+tmonier_agentic_feeds_admin_feed_issue_index:
+    path: /product-feeds/issues
+    methods: [GET]
+    defaults:
+        _controller: tmonier_agentic_feeds.controller.feed_issue::indexAction
+        _sylius:
+            section: admin
+            permission: true
+            template: "@SyliusAdmin/shared/crud/index.html.twig"
+            grid: tmonier_agentic_feeds_admin_feed_issue
+            vars:
+                hook_prefix: tmonier_agentic_feeds_admin.feed_issue
