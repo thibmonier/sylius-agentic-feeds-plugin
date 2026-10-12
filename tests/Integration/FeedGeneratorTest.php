@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Tmonier\SyliusAgenticFeedsPlugin\Integration;
 
-use Sylius\Component\Core\Model\ProductInterface;
+use Sylius\Component\Core\Model\ChannelPricingInterface;
+use Sylius\Component\Core\Model\ProductVariantInterface;
 use Sylius\Component\Currency\Model\ExchangeRateInterface;
 use Sylius\Resource\Factory\FactoryInterface;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
@@ -232,11 +233,10 @@ final class FeedGeneratorTest extends KernelTestCase
         $code = (string) $feed->getCode();
         $this->generate($feed);
 
-        $product = $this->entityManager()->getRepository(ProductInterface::class)->findOneBy(['code' => 'STALE_' . $this->catalog->suffix]);
-        self::assertInstanceOf(ProductInterface::class, $product);
-        $product->getVariants()->first() ?: self::fail('No variant');
-        $pricing = $product->getVariants()->first()->getChannelPricings()->first();
-        self::assertNotFalse($pricing);
+        $variant = $this->entityManager()->getRepository(ProductVariantInterface::class)->findOneBy(['code' => 'STALE_' . $this->catalog->suffix]);
+        self::assertInstanceOf(ProductVariantInterface::class, $variant);
+        $pricing = $variant->getChannelPricings()->first();
+        self::assertInstanceOf(ChannelPricingInterface::class, $pricing);
         $pricing->setPrice(1200);
         $this->entityManager()->flush();
         $this->entityManager()->clear();

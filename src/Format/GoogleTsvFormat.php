@@ -64,7 +64,8 @@ final class GoogleTsvFormat implements FeedFormatInterface
                     $value = $fields[$column] ?? '';
                     $row[] = \is_array($value) ? '' : $value;
                 }
-                $images = array_values((array) ($fields['additional_image_link'] ?? []));
+                $images = $fields['additional_image_link'] ?? [];
+                $images = \is_array($images) ? $images : [];
                 for ($index = 0; $index < 10; ++$index) {
                     $row[] = (string) ($images[$index] ?? '');
                 }

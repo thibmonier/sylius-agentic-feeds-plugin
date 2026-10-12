@@ -13,6 +13,7 @@ final class FlysystemFeedStorage implements FeedStorageInterface
     {
     }
 
+    /** @param resource $stream */
     public function write(string $path, $stream): void
     {
         rewind($stream);

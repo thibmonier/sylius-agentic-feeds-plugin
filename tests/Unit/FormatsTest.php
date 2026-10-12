@@ -17,7 +17,7 @@ final class FormatsTest extends TestCase
 {
     public function testGoogleXml(): void
     {
-        $xml = new \SimpleXMLElement($this->write(new GoogleXmlFormat(), [FeedItems::onSale(), FeedItems::item(['id' => 'MUG', 'hasVariants' => false, 'gtin' => null, 'mpn' => null, 'availability' => FeedItem::OUT_OF_STOCK])])['main']);
+        $xml = new \SimpleXMLElement($this->write(new GoogleXmlFormat(), [FeedItems::onSale(), FeedItems::item(id: 'MUG', hasVariants: false, gtin: null, mpn: null, availability: FeedItem::OUT_OF_STOCK)])['main']);
         $items = $xml->channel->item;
         self::assertCount(2, $items);
 
@@ -44,12 +44,12 @@ final class FormatsTest extends TestCase
 
     public function testGoogleTsv(): void
     {
-        $lines = explode("\n", rtrim($this->write(new GoogleTsvFormat(), [FeedItems::item(['description' => "Ligne 1\tTab\nLigne 2"])])['main'], "\n"));
+        $lines = explode("\n", rtrim($this->write(new GoogleTsvFormat(), [FeedItems::item(description: "Ligne 1\tTab\nLigne 2")])['main'], "\n"));
         $header = explode("\t", $lines[0]);
         $row = array_combine(array_map(static fn (string $name, int $index): string => $name . '#' . $index, $header, array_keys($header)), explode("\t", $lines[1]));
 
         self::assertSame('id', $header[0]);
-        self::assertSame(10, \count(array_keys($header, 'additional_image_link', true)));
+        self::assertCount(10, array_keys($header, 'additional_image_link', true));
         self::assertSame('Ligne 1 Tab Ligne 2', $row['description#2']);
         self::assertSame('25.00 EUR', $row['price#6']);
     }
@@ -57,7 +57,7 @@ final class FormatsTest extends TestCase
     public function testOpenAiJsonlIsGzippedAndUsesTheOpenAiNames(): void
     {
         $format = new OpenAiJsonlFormat(['WEB_FR' => ['return_policy' => 'https://shop.example.com/returns', 'privacy_policy' => null, 'terms' => null, 'return_days' => 30]]);
-        $gzip = $this->write($format, [FeedItems::onSale(), FeedItems::item(['id' => 'MUG', 'itemGroupId' => 'MUG', 'hasVariants' => false, 'gtin' => '123'])], 'openai_jsonl')['main'];
+        $gzip = $this->write($format, [FeedItems::onSale(), FeedItems::item(id: 'MUG', itemGroupId: 'MUG', hasVariants: false, gtin: '123')], 'openai_jsonl')['main'];
 
         self::assertSame("\x1f\x8b", substr($gzip, 0, 2));
         $lines = explode("\n", trim((string) gzdecode($gzip)));
@@ -88,7 +88,7 @@ final class FormatsTest extends TestCase
 
     public function testStripeCsvWritesTheProductInventoryAndPricingFiles(): void
     {
-        $files = $this->write(new StripeCsvFormat(), [FeedItems::onSale(), FeedItems::item(['id' => 'UNTRACKED', 'quantity' => null])], 'stripe_csv');
+        $files = $this->write(new StripeCsvFormat(), [FeedItems::onSale(), FeedItems::item(id: 'UNTRACKED', quantity: null)], 'stripe_csv');
 
         $products = $this->csv($files['main']);
         self::assertSame(['id', 'title', 'description', 'link', 'image_link', 'additional_image_link', 'availability', 'inventory_quantity', 'inventory_not_tracked', 'price', 'sale_price', 'sale_price_effective_date', 'tax_behavior', 'brand', 'gtin', 'mpn', 'condition', 'product_category', 'item_group_id', 'color', 'size', 'weight'], array_keys($products[0]));
@@ -119,7 +119,7 @@ final class FormatsTest extends TestCase
 
     public function testValidation(): void
     {
-        $issues = (new GoogleXmlFormat())->validate(FeedItems::item(['id' => str_repeat('x', 51), 'title' => str_repeat('t', 151), 'brand' => null, 'imageLink' => null, 'gtin' => '123', 'mpn' => null, 'price' => 0]));
+        $issues = (new GoogleXmlFormat())->validate(FeedItems::item(id: str_repeat('x', 51), title: str_repeat('t', 151), brand: null, imageLink: null, gtin: '123', mpn: null, price: 0));
         $codes = array_map(static fn (Issue $issue): string => $issue->severity . ':' . $issue->code . ':' . $issue->field, $issues);
 
         self::assertEqualsCanonicalizing([
@@ -136,7 +136,7 @@ final class FormatsTest extends TestCase
 
     public function testLongTitlesAreCut(): void
     {
-        $xml = new \SimpleXMLElement($this->write(new GoogleXmlFormat(), [FeedItems::item(['title' => str_repeat('é', 200)])])['main']);
+        $xml = new \SimpleXMLElement($this->write(new GoogleXmlFormat(), [FeedItems::item(title: str_repeat('é', 200))])['main']);
 
         self::assertSame(150, mb_strlen((string) $xml->channel->item[0]->title));
     }

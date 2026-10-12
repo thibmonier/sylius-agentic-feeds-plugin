@@ -40,10 +40,16 @@ final class ProductFeedType extends AbstractResourceType
         foreach ($this->formats->all() as $code => $format) {
             $formats[$format->getLabel()] = $code;
         }
-        $codes = static fn (iterable $resources): array => array_combine(
-            $list = array_map(static fn (LocaleInterface|CurrencyInterface $resource): string => (string) $resource->getCode(), [...$resources]),
-            $list,
-        );
+        $codes = static function (iterable $resources): array {
+            $choices = [];
+            foreach ($resources as $resource) {
+                if ($resource instanceof LocaleInterface || $resource instanceof CurrencyInterface) {
+                    $choices[(string) $resource->getCode()] = (string) $resource->getCode();
+                }
+            }
+
+            return $choices;
+        };
 
         $builder
             ->addEventSubscriber(new AddCodeFormSubscriber(null, ['help' => 'tmonier_agentic_feeds.form.code_help']))

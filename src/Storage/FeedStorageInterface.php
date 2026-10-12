@@ -7,7 +7,11 @@ namespace Tmonier\SyliusAgenticFeedsPlugin\Storage;
 /** Where generated files live. Paths are file names relative to the storage root. */
 interface FeedStorageInterface
 {
-    /** Replaces the file atomically with the content of the stream (read from its start). @param resource $stream */
+    /**
+     * Replaces the file atomically with the content of the stream (read from its start).
+     *
+     * @param resource $stream
+     */
     public function write(string $path, $stream): void;
 
     /** @return resource|null */

@@ -12,7 +12,6 @@ use Sylius\Component\Core\Model\ProductInterface;
 use Sylius\Component\Core\Model\ProductVariantInterface;
 use Sylius\Component\Core\Model\TaxonInterface;
 use Sylius\Component\Currency\Converter\CurrencyConverterInterface;
-use Sylius\Component\Product\Model\ProductOptionValueInterface;
 use Sylius\Component\Taxation\Calculator\CalculatorInterface;
 use Sylius\Component\Taxation\Resolver\TaxRateResolverInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -238,9 +237,6 @@ final class ItemBuilder
     {
         $options = [];
         foreach ($variant->getOptionValues() as $value) {
-            if (!$value instanceof ProductOptionValueInterface) {
-                continue;
-            }
             $value->setCurrentLocale($locale);
             $option = $value->getOption();
             $option?->setCurrentLocale($locale);
@@ -256,7 +252,7 @@ final class ItemBuilder
         foreach ($variant->getOptionValues() as $value) {
             $code = strtolower((string) $value->getOptionCode());
             // "size", "t_shirt_size", "shoe_color"...: the option code contains the word.
-            if ($value instanceof ProductOptionValueInterface && [] !== array_filter($codes, static fn (string $word): bool => str_contains($code, $word))) {
+            if ([] !== array_filter($codes, static fn (string $word): bool => str_contains($code, $word))) {
                 $value->setCurrentLocale($locale);
 
                 return (string) $value->getValue();

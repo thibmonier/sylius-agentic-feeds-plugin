@@ -34,6 +34,7 @@
         "symfony/http-client": "^6.4 || ^7.4 || ^8.0",
         "symfony/intl": "^6.4 || ^7.4 || ^8.0",
         "symfony/runtime": "^6.4 || ^7.4 || ^8.0",
+        "symfony/scheduler": "^6.4 || ^7.4 || ^8.0",
         "symfony/web-profiler-bundle": "^6.4 || ^7.4 || ^8.0",
         "symfony/webpack-encore-bundle": "^2.2",
         "tmonier/sylius-webhook-outbox-plugin": "^1.0"

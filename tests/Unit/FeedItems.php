@@ -21,46 +21,64 @@ final class FeedItems
         return new FeedContext($channel, 'fr_FR', 'EUR', $country, $format, new \DateTimeImmutable('2026-10-12 10:00:00+02:00'));
     }
 
-    /** @param array<string, mixed> $overrides */
-    public static function item(array $overrides = []): FeedItem
-    {
-        $values = array_merge([
-            'id' => 'TSHIRT-RED-M',
-            'itemGroupId' => 'TSHIRT',
-            'productCode' => 'TSHIRT',
-            'title' => 'T-shirt - Rouge, M',
-            'description' => 'Coton bio, "coupe droite"',
-            'link' => 'https://shop.example.com/fr_FR/products/t-shirt',
-            'imageLink' => 'https://shop.example.com/media/image/a.jpg',
-            'additionalImageLinks' => ['https://shop.example.com/media/image/b,1.jpg'],
-            'price' => 2500,
-            'currency' => 'EUR',
-            'salePrice' => null,
-            'salePriceStart' => null,
-            'salePriceEnd' => null,
-            'availability' => FeedItem::IN_STOCK,
-            'quantity' => 12,
-            'gtin' => '4006381333931',
-            'mpn' => null,
-            'brand' => 'Acme',
-            'condition' => 'new',
-            'productType' => 'Vêtements > T-shirts',
-            'weightKg' => 0.25,
-            'options' => ['Couleur' => 'Rouge', 'Taille' => 'M'],
-            'hasVariants' => true,
-            'sellerName' => 'Boutique',
-            'sellerUrl' => 'https://shop.example.com',
-            'color' => 'Rouge',
-            'size' => 'M',
-        ], $overrides);
-
-        return new FeedItem(...$values);
+    /**
+     * @param list<string> $additionalImageLinks
+     * @param array<string, string> $options
+     */
+    public static function item(
+        string $id = 'TSHIRT-RED-M',
+        string $itemGroupId = 'TSHIRT',
+        string $title = 'T-shirt - Rouge, M',
+        string $description = 'Coton bio, "coupe droite"',
+        ?string $imageLink = 'https://shop.example.com/media/image/a.jpg',
+        array $additionalImageLinks = ['https://shop.example.com/media/image/b,1.jpg'],
+        int $price = 2500,
+        ?int $salePrice = null,
+        ?\DateTimeInterface $salePriceStart = null,
+        ?\DateTimeInterface $salePriceEnd = null,
+        string $availability = FeedItem::IN_STOCK,
+        ?int $quantity = 12,
+        ?string $gtin = '4006381333931',
+        ?string $mpn = null,
+        ?string $brand = 'Acme',
+        array $options = ['Couleur' => 'Rouge', 'Taille' => 'M'],
+        bool $hasVariants = true,
+    ): FeedItem {
+        return new FeedItem(
+            $id,
+            $itemGroupId,
+            'TSHIRT',
+            $title,
+            $description,
+            'https://shop.example.com/fr_FR/products/t-shirt',
+            $imageLink,
+            $additionalImageLinks,
+            $price,
+            'EUR',
+            $salePrice,
+            $salePriceStart,
+            $salePriceEnd,
+            $availability,
+            $quantity,
+            $gtin,
+            $mpn,
+            $brand,
+            'new',
+            'Vêtements > T-shirts',
+            0.25,
+            $options,
+            $hasVariants,
+            'Boutique',
+            'https://shop.example.com',
+            'Rouge',
+            'M',
+        );
     }
 
     /** A reduced item: 25.00 reference, 19.90 now, until 2026-10-31. */
     public static function onSale(?\DateTimeInterface $end = new \DateTimeImmutable('2026-10-31 23:59:00+01:00')): FeedItem
     {
-        return self::item(['salePrice' => 1990, 'salePriceStart' => new \DateTimeImmutable('2026-10-01 00:00:00+02:00'), 'salePriceEnd' => $end]);
+        return self::item(salePrice: 1990, salePriceStart: new \DateTimeImmutable('2026-10-01 00:00:00+02:00'), salePriceEnd: $end);
     }
 
     /**

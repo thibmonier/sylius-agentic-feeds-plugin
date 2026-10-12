@@ -62,7 +62,7 @@ final class FeedGenerator
             }
             $writer = $format->open($context, $streams);
 
-            foreach (array_chunk($this->variantIds($context->channel), $this->batchSize) as $ids) {
+            foreach (array_chunk($this->variantIds($context->channel), max(1, $this->batchSize)) as $ids) {
                 foreach ($this->variants($ids) as $variant) {
                     $item = $this->itemBuilder->build($variant, $context);
                     if (null === $item) {

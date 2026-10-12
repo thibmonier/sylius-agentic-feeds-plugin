@@ -11,6 +11,7 @@ final class LocalFeedStorage implements FeedStorageInterface
     {
     }
 
+    /** @param resource $stream */
     public function write(string $path, $stream): void
     {
         $target = $this->path($path);

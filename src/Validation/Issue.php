@@ -32,11 +32,13 @@ final class Issue
     ) {
     }
 
+    /** @param array<string, string|int> $parameters */
     public static function error(string $code, ?string $field = null, array $parameters = []): self
     {
         return new self(self::ERROR, $code, $field, $parameters);
     }
 
+    /** @param array<string, string|int> $parameters */
     public static function warning(string $code, ?string $field = null, array $parameters = []): self
     {
         return new self(self::WARNING, $code, $field, $parameters);

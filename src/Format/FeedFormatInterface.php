@@ -25,7 +25,11 @@ interface FeedFormatInterface
 
     public function getContentType(string $role): string;
 
-    /** Format-specific checks (lengths, required fields). @return list<Issue> */
+    /**
+     * Format-specific checks (lengths, required fields).
+     *
+     * @return list<Issue>
+     */
     public function validate(FeedItem $item): array;
 
     /** @param array<string, resource> $streams one writable stream per role of getFiles() */

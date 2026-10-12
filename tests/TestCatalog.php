@@ -81,6 +81,15 @@ final class TestCatalog
         return $this->channel = $channel;
     }
 
+    /** Use the shop channel of the test application (hostname localhost) instead of a new one. */
+    public function useShopChannel(): ChannelInterface
+    {
+        $channel = $this->entityManager()->getRepository(ChannelInterface::class)->findOneBy(['hostname' => 'localhost']);
+        Assert::isInstanceOf($channel, ChannelInterface::class);
+
+        return $this->channel = $channel;
+    }
+
     public function currency(string $code): CurrencyInterface
     {
         $currency = $this->entityManager()->getRepository(CurrencyInterface::class)->findOneBy(['code' => $code]);
