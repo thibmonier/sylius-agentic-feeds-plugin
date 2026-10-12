@@ -29,7 +29,8 @@ final class FeedDownloadController
     public function __invoke(Request $request, string $code, string $role = 'main'): Response
     {
         $feed = $this->feedRepository->findOneByCode($code);
-        if (null === $feed || !$feed->isEnabled() || !$this->formats->has((string) $feed->getFormat())) {
+        // Feeds of a disabled channel list products whose links no longer work: not served.
+        if (null === $feed || !$feed->isEnabled() || true !== $feed->getChannel()?->isEnabled() || !$this->formats->has((string) $feed->getFormat())) {
             throw new NotFoundHttpException();
         }
         $token = $feed->getAccessToken();

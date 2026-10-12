@@ -7,9 +7,10 @@ namespace Tmonier\SyliusAgenticFeedsPlugin\Feed;
 use Sylius\Component\Core\Model\ChannelInterface;
 use Tmonier\SyliusAgenticFeedsPlugin\Entity\ProductFeedInterface;
 
-/** What a feed is built for: channel, locale, currency, target country, format. */
+/** What a feed is built for: channel, locale, currency, target country, format, shipping entries. */
 final class FeedContext
 {
+    /** @param list<string> $shippingRules */
     public function __construct(
         public readonly ChannelInterface $channel,
         public readonly string $localeCode,
@@ -17,6 +18,8 @@ final class FeedContext
         public readonly ?string $countryCode,
         public readonly string $format,
         public readonly \DateTimeImmutable $now,
+        /** Stripe shipping entries "country:delivery_area:service:speed_range:price" of the feed. */
+        public readonly array $shippingRules = [],
     ) {
     }
 
@@ -34,6 +37,7 @@ final class FeedContext
             $feed->getCountryCode(),
             (string) $feed->getFormat(),
             $now ?? new \DateTimeImmutable(),
+            $feed->getShippingRules(),
         );
     }
 }

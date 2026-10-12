@@ -1,5 +1,8 @@
 tmonier_agentic_feeds:
     product_feed:
+        shipping_rules:
+            invalid: 'Invalid shipping entry "%rule%": expected country:delivery_area:service:speed_range:price, e.g. FR:ALL:Standard:2-4:9.90 EUR.'
+            required: 'Stripe feeds need at least one shipping entry.'
         code:
             unique: 'This code is already used.'
             not_blank: 'Enter a code.'
@@ -16,3 +19,7 @@ tmonier_agentic_feeds:
             not_in_channel: 'This locale is not enabled in the channel.'
         currency:
             not_in_channel: 'This currency is not available in the channel.'
+            no_exchange_rate: 'No exchange rate between the channel base currency and this currency: add one in Configuration > Exchange rates.'
+    variant:
+        gtin:
+            invalid: 'Invalid GTIN (8, 12, 13 or 14 digits with a valid check digit, no reserved prefix).'

@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
 use Tmonier\SyliusAgenticFeedsPlugin\Command\GenerateFeedsCommand;
+use Tmonier\SyliusAgenticFeedsPlugin\Command\ImportIdentifiersCommand;
+use Tmonier\SyliusAgenticFeedsPlugin\Form\Extension\ProductVariantTypeExtension;
+use Tmonier\SyliusAgenticFeedsPlugin\Form\VariantIdentifiersManager;
 use Tmonier\SyliusAgenticFeedsPlugin\Controller\Admin\GenerateFeedController;
 use Tmonier\SyliusAgenticFeedsPlugin\Controller\FeedDownloadController;
 use Tmonier\SyliusAgenticFeedsPlugin\EventListener\CatalogChangeListener;
@@ -53,6 +56,7 @@ return static function (ContainerConfigurator $container): void {
             service('sylius.resolver.tax_rate'),
             service('sylius.tax_calculator'),
             service('sylius.calculator.product_variant_price'),
+            service('tmonier_agentic_feeds.repository.variant_identifiers'),
             param('tmonier_agentic_feeds.attributes'),
             param('tmonier_agentic_feeds.default_brand'),
             param('tmonier_agentic_feeds.condition'),
@@ -68,6 +72,7 @@ return static function (ContainerConfigurator $container): void {
             service('tmonier_agentic_feeds.repository.feed_issue'),
             service('tmonier_agentic_feeds.factory.feed_issue'),
             service('logger'),
+            service('sylius.repository.exchange_rate'),
             param('tmonier_agentic_feeds.batch_size'),
         ])
         ->tag('monolog.logger', ['channel' => 'tmonier_agentic_feeds']);
@@ -96,6 +101,22 @@ return static function (ContainerConfigurator $container): void {
         ->public();
 
     // Admin
+    $services->set('tmonier_agentic_feeds.identifiers_manager', VariantIdentifiersManager::class)
+        ->args([service('tmonier_agentic_feeds.repository.variant_identifiers'), service('tmonier_agentic_feeds.factory.variant_identifiers'), service('doctrine.orm.entity_manager')])
+        ->tag('kernel.event_listener', ['event' => 'sylius.product_variant.pre_create', 'method' => 'onPreSave'])
+        ->tag('kernel.event_listener', ['event' => 'sylius.product_variant.pre_update', 'method' => 'onPreSave'])
+        ->tag('kernel.event_listener', ['event' => 'sylius.product.pre_create', 'method' => 'onPreSave'])
+        ->tag('kernel.event_listener', ['event' => 'sylius.product.pre_update', 'method' => 'onPreSave'])
+        ->tag('kernel.reset', ['method' => 'reset']);
+
+    $services->set('tmonier_agentic_feeds.form.extension.product_variant', ProductVariantTypeExtension::class)
+        ->args([service('tmonier_agentic_feeds.identifiers_manager')])
+        ->tag('form.type_extension');
+
+    $services->set('tmonier_agentic_feeds.command.import_identifiers', ImportIdentifiersCommand::class)
+        ->args([service('sylius.repository.product_variant'), service('tmonier_agentic_feeds.identifiers_manager'), service('doctrine.orm.entity_manager')])
+        ->tag('console.command');
+
     $services->set('tmonier_agentic_feeds.form.product_feed', ProductFeedType::class)
         ->args([
             param('tmonier_agentic_feeds.model.product_feed.class'),
@@ -107,7 +128,7 @@ return static function (ContainerConfigurator $container): void {
         ->tag('form.type');
 
     $services->set('tmonier_agentic_feeds.validator.product_feed', ValidProductFeedValidator::class)
-        ->args([service('tmonier_agentic_feeds.format_registry')])
+        ->args([service('tmonier_agentic_feeds.format_registry'), service('sylius.repository.exchange_rate')])
         ->tag('validator.constraint_validator', ['alias' => 'tmonier_agentic_feeds_valid_product_feed']);
 
     $services->set('tmonier_agentic_feeds.menu.admin', AdminMenuListener::class)

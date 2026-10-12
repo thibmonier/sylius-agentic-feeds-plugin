@@ -40,7 +40,9 @@ final class FeedGeneratorTest extends KernelTestCase
         $parent = $this->catalog->taxon('Clothing', $this->catalog->taxon('Category'));
         $shirts = $this->catalog->product('SHIRT', [2500, 2700], $this->catalog->taxon('Shirts', $parent));
         $this->catalog->attribute($shirts, 'brand', 'Acme');
+        // A product-level GTIN is not repeated on the variants: the first has its own.
         $this->catalog->attribute($shirts, 'gtin', '4006381333931');
+        $this->catalog->identifiers($this->catalog->variant($shirts), '96385074', 'SH-1');
         $this->catalog->image($shirts, 'ab/cd/shirt.jpg');
         $mug = $this->catalog->product('MUG', [990]);
         $this->catalog->image($mug, 'ab/cd/mug.jpg');
@@ -65,7 +67,11 @@ final class FeedGeneratorTest extends KernelTestCase
         self::assertSame(sprintf('https://%s/media/image/ab/cd/shirt.jpg', $host), (string) $g->image_link);
         self::assertSame('25.00 EUR', (string) $g->price);
         self::assertSame('Acme', (string) $g->brand);
-        self::assertSame('4006381333931', (string) $g->gtin);
+        self::assertSame('96385074', (string) $g->gtin);
+        self::assertSame('SH-1', (string) $g->mpn);
+        $second = $items[1]->children('http://base.google.com/ns/1.0');
+        self::assertCount(0, $second->gtin, 'The product GTIN is not given to every variant.');
+        self::assertContains('shared_identifier', array_map(static fn (array $issue): string => $issue[0]->code, array_filter($result->issues(), fn (array $issue): bool => $issue[1] === 'SHIRT_' . $this->catalog->suffix . '-2')));
         self::assertSame('SHIRT_' . $this->catalog->suffix, (string) $g->item_group_id);
         self::assertSame('Clothing > Shirts', (string) $g->product_type);
         self::assertSame('in_stock', (string) $g->availability);
@@ -81,7 +87,6 @@ final class FeedGeneratorTest extends KernelTestCase
         self::assertSame(ProductFeedInterface::STATUS_WARNINGS, $feed->getLastStatus());
         self::assertSame(3, $feed->getLastItemCount());
         self::assertNotNull($feed->getLastGeneratedAt());
-        self::assertNull($feed->getStaleSince());
     }
 
     public function testASalePriceOnlyWithACatalogPromotionAndItsReferencePrice(): void
@@ -127,13 +132,48 @@ final class FeedGeneratorTest extends KernelTestCase
         return $items;
     }
 
-    public function testPricesIncludeTheTaxAndAreConverted(): void
+    public function testPricesAreTheDisplayedPricesAndUsCanadaFeedsExcludeTheTax(): void
     {
-        $product = $this->catalog->product('TAXED', [2500]);
-        $this->catalog->image($product, 'a/taxed.jpg');
-        $this->catalog->tax($this->catalog->variant($product), 0.2);
+        $net = $this->catalog->product('NET', [2500]);
+        $this->catalog->image($net, 'a/net.jpg');
+        // 20 % not included: the shop displays 25.00 without tax.
+        $this->catalog->tax($this->catalog->variant($net), 0.2);
+        $eu = $this->catalog->feed(StripeCsvFormat::CODE);
+        $us = $this->catalog->feed(StripeCsvFormat::CODE, null, 'EUR', 'US');
+
+        $result = $this->generate($eu);
+        $this->generate($us);
+
+        $row = $this->stripeRow((string) $eu->getCode());
+        self::assertSame(['25.00 EUR', 'exclusive'], [$row['price'], $row['tax_behavior']], 'Never a tax the shop does not display.');
+        self::assertContains('price_excludes_tax', array_map(static fn (array $issue): string => $issue[0]->code, $result->issues()));
+        self::assertSame(['25.00 EUR', 'exclusive'], [$this->stripeRow((string) $us->getCode())['price'], $this->stripeRow((string) $us->getCode())['tax_behavior']]);
+    }
+
+    public function testIncludedTaxIsRemovedForUsFeeds(): void
+    {
+        $gross = $this->catalog->product('GROSS', [3000]);
+        $this->catalog->image($gross, 'a/gross.jpg');
+        $this->catalog->tax($this->catalog->variant($gross), 0.2, true);
+        $eu = $this->catalog->feed(GoogleXmlFormat::CODE);
+        $us = $this->catalog->feed(GoogleXmlFormat::CODE, null, 'EUR', 'US');
+
+        $result = $this->generate($eu);
+        $this->generate($us);
+
+        self::assertSame(['30.00 EUR', '', false], $this->prices((string) $eu->getCode())['GROSS']);
+        self::assertNotContains('price_excludes_tax', array_map(static fn (array $issue): string => $issue[0]->code, $result->issues()));
+        self::assertSame(['25.00 EUR', '', false], $this->prices((string) $us->getCode())['GROSS'], 'US and Canada: prices without tax.');
+    }
+
+    public function testConversionAndMissingExchangeRate(): void
+    {
+        $product = $this->catalog->product('CONVERTED', [2500]);
+        $this->catalog->image($product, 'a/converted.jpg');
         $usd = $this->catalog->currency('USD');
+        $sek = $this->catalog->currency('SEK');
         $this->catalog->channel()->addCurrency($usd);
+        $this->catalog->channel()->addCurrency($sek);
         /** @var FactoryInterface<ExchangeRateInterface> $rateFactory */
         $rateFactory = self::getContainer()->get('sylius.factory.exchange_rate');
         $rate = $rateFactory->createNew();
@@ -142,16 +182,29 @@ final class FeedGeneratorTest extends KernelTestCase
         $rate->setRatio(1.1);
         $this->entityManager()->persist($rate);
         $this->entityManager()->flush();
-        $eur = $this->catalog->feed(StripeCsvFormat::CODE);
-        $dollars = $this->catalog->feed(OpenAiJsonlFormat::CODE, null, 'USD');
+        $dollars = $this->catalog->feed(OpenAiJsonlFormat::CODE, null, 'USD', 'US');
+        $kronor = $this->catalog->feed(OpenAiJsonlFormat::CODE, null, 'SEK', 'US');
 
-        $this->generate($eur);
         $this->generate($dollars);
+        $result = $this->generate($kronor);
 
-        self::assertStringContainsString('"30.00 EUR"', (string) $this->file((string) $eur->getCode(), '-pricing.csv'));
         $line = json_decode(trim((string) $this->file((string) $dollars->getCode(), '.jsonl.gz')), true, 512, \JSON_THROW_ON_ERROR);
         self::assertIsArray($line);
-        self::assertSame('33.00 USD', $line['price']);
+        self::assertSame('27.50 USD', $line['price']);
+        // No EUR/SEK rate: no unconverted amount published as SEK.
+        self::assertTrue($result->failed());
+        self::assertStringContainsString('No exchange rate between EUR and SEK', (string) $result->failure());
+        self::assertNull($this->file((string) $kronor->getCode(), '.jsonl.gz'));
+    }
+
+    /** @return array<string, string> the first product row of a Stripe feed */
+    private function stripeRow(string $code): array
+    {
+        $lines = explode("\n", trim((string) $this->file($code, '.csv')));
+        $header = str_getcsv($lines[0], ',', '"', '');
+        $row = str_getcsv($lines[1] ?? '', ',', '"', '');
+
+        return array_combine(array_map('strval', $header), array_map('strval', array_pad($row, \count($header), '')));
     }
 
     public function testStockAndExcludedVariants(): void
@@ -243,6 +296,9 @@ final class FeedGeneratorTest extends KernelTestCase
         $feed = $this->entityManager()->getRepository(ProductFeedInterface::class)->findOneBy(['code' => $code]);
         self::assertInstanceOf(ProductFeedInterface::class, $feed);
         self::assertNotNull($feed->getStaleSince());
+        // The change happened a minute ago (a change in the second a generation starts keeps the feed stale).
+        $feed->setStaleSince(new \DateTime('-1 minute'));
+        $this->entityManager()->flush();
 
         $tester = $this->command();
         self::assertSame(0, $tester->execute(['codes' => [$code], '--stale' => true]));

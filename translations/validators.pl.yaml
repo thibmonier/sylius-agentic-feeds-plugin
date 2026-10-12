@@ -1,5 +1,8 @@
 tmonier_agentic_feeds:
     product_feed:
+        shipping_rules:
+            invalid: 'Nieprawidłowy wiersz wysyłki „%rule%”: oczekiwano kraj:obszar:usługa:czas:cena, np. FR:ALL:Standard:2-4:9.90 EUR.'
+            required: 'Feedy Stripe wymagają co najmniej jednego wiersza wysyłki.'
         code:
             unique: 'Ten kod jest już używany.'
             not_blank: 'Wprowadź kod.'
@@ -16,3 +19,7 @@ tmonier_agentic_feeds:
             not_in_channel: 'Ten język nie jest włączony w kanale.'
         currency:
             not_in_channel: 'Ta waluta nie jest dostępna w kanale.'
+            no_exchange_rate: 'Brak kursu wymiany między walutą bazową kanału a tą walutą: dodaj go w Konfiguracja > Kursy wymiany.'
+    variant:
+        gtin:
+            invalid: 'Nieprawidłowy GTIN (8, 12, 13 lub 14 cyfr z poprawną cyfrą kontrolną, bez zastrzeżonego prefiksu).'

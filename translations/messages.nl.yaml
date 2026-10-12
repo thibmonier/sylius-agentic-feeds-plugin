@@ -42,6 +42,8 @@ tmonier_agentic_feeds:
         gtin: 'GTIN'
         seller_name: 'naam verkoper'
         sale_price: 'aanbiedingsprijs'
+        shipping: 'verzending'
+        country: 'land'
     issue:
         missing_price: 'Geen prijs in het kanaal.'
         missing_field: 'Verplicht veld ontbreekt: %field%.'
@@ -49,6 +51,12 @@ tmonier_agentic_feeds:
         invalid_gtin: 'Ongeldige GTIN "%gtin%" (lengte, controlecijfer of gereserveerd voorvoegsel): weggelaten uit het bestand.'
         no_identifiers: 'Geen GTIN of MPN: verzonden met identifier_exists = no als het formaat dit ondersteunt.'
         no_sale_end_date: 'De catalogusactie heeft geen einddatum: de verlaagde prijs wordt als prijs verzonden, zonder aanbiedingsprijs.'
+        price_excludes_tax: 'De prijs is exclusief belasting (zoals de winkel hem toont); Google vereist prijzen inclusief btw buiten de VS en Canada.'
+        invalid_characters: 'In XML ongeldige stuurtekens zijn uit de teksten verwijderd.'
+        shared_identifier: 'De GTIN/MPN van het productkenmerk wordt niet herhaald op de varianten: voer per variant een GTIN in (variantformulier of tmonier:feeds:import-identifiers).'
+        duplicate_gtin: 'GTIN %gtin% wordt al gebruikt door %item%: weggelaten bij dit artikel.'
+        unsupported_country: 'Het OpenAI-formaat dekt de VS (en CA, MX na bevestiging): doelland %country% wordt niet verzonden.'
+        missing_shipping: 'Stripe vereist verzending voor fysieke goederen: voeg verzendregels toe aan de feed.'
     form:
         code_help: 'Letters, cijfers, "-" en "_". Onderdeel van de feed-URL: /feeds/<code>.'
         locale_help: 'Taal van de titels en beschrijvingen (een van de talen van het kanaal).'
@@ -61,5 +69,10 @@ tmonier_agentic_feeds:
         access_token: 'Toegangstoken'
         access_token_help: 'Optioneel, minimaal 16 tekens: de feed-URL vereist dan ?token=... (of de header X-Feed-Token).'
         disclaimer: 'Een feed maakt uw catalogus leesbaar voor shoppingzoekmachines en AI-assistenten; het garandeert geen zichtbaarheid, en kopers rekenen af in uw winkel.'
+        shipping_rules: 'Verzending (Stripe)'
+        shipping_rules_help: 'Verplicht voor Stripe-feeds, één regel per item: land:gebied:dienst:levertijd:prijs, bijv. FR:ALL:Standard:2-4:9.90 EUR (voor producten die verzonden worden).'
+        gtin: 'GTIN'
+        gtin_help: 'EAN/UPC van deze variant (8, 12, 13 of 14 cijfers) voor de productfeeds; één per variant.'
+        mpn: 'MPN'
     webhook:
         price_changed: 'Prijs van een productvariant gewijzigd'

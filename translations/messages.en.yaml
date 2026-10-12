@@ -42,6 +42,8 @@ tmonier_agentic_feeds:
         gtin: 'GTIN'
         seller_name: 'seller name'
         sale_price: 'sale price'
+        shipping: 'shipping'
+        country: 'country'
     issue:
         missing_price: 'No price in the channel.'
         missing_field: 'Required field missing: %field%.'
@@ -49,6 +51,12 @@ tmonier_agentic_feeds:
         invalid_gtin: 'Invalid GTIN "%gtin%" (length, check digit or reserved prefix): left out of the file.'
         no_identifiers: 'No GTIN nor MPN: sent with identifier_exists = no where the format has it.'
         no_sale_end_date: 'The catalog promotion has no end date: the reduced price is sent as the price, without sale price.'
+        price_excludes_tax: 'The price excludes tax (as the shop displays it); Google requires prices with VAT outside the US and Canada.'
+        invalid_characters: 'Control characters invalid in XML were removed from the texts.'
+        shared_identifier: 'The product GTIN/MPN attribute is not repeated on its variants: enter one GTIN per variant (variant form or tmonier:feeds:import-identifiers).'
+        duplicate_gtin: 'GTIN %gtin% already used by %item%: left out of this item.'
+        unsupported_country: 'The OpenAI format covers the US (and CA, MX after confirmation): target country %country% not sent.'
+        missing_shipping: 'Stripe requires shipping for physical goods: add shipping entries to the feed.'
     form:
         code_help: 'Letters, digits, "-" and "_". Part of the feed URL: /feeds/<code>.'
         locale_help: 'Language of the titles and descriptions (one of the channel locales).'
@@ -61,5 +69,10 @@ tmonier_agentic_feeds:
         access_token: 'Access token'
         access_token_help: 'Optional, 16 characters or more: the feed URL then needs ?token=... (or the X-Feed-Token header).'
         disclaimer: 'A feed makes your catalog readable by shopping engines and AI assistants; it does not guarantee any visibility, and buyers check out on your shop.'
+        shipping_rules: 'Shipping (Stripe)'
+        shipping_rules_help: 'Required for Stripe feeds, one entry per line: country:delivery_area:service:speed_range:price, e.g. FR:ALL:Standard:2-4:9.90 EUR (sent for products that require shipping).'
+        gtin: 'GTIN'
+        gtin_help: 'EAN/UPC of this variant (8, 12, 13 or 14 digits) for the product feeds; one per variant.'
+        mpn: 'MPN'
     webhook:
         price_changed: 'Product variant price changed'

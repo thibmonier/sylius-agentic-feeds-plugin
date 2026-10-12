@@ -1,0 +1,8 @@
+{# GTIN / MPN of the variant (feeds), in the general section of the variant form. #}
+{% set form = hookable_metadata.context.form %}
+{% if form.tmonierAgenticFeeds is defined %}
+    <div class="row" {{ sylius_test_html_attribute('tmonier-agentic-feeds-identifiers') }}>
+        <div class="col-12 col-md-6">{{ form_row(form.tmonierAgenticFeeds.gtin) }}</div>
+        <div class="col-12 col-md-6">{{ form_row(form.tmonierAgenticFeeds.mpn) }}</div>
+    </div>
+{% endif %}

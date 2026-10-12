@@ -1,5 +1,8 @@
 tmonier_agentic_feeds:
     product_feed:
+        shipping_rules:
+            invalid: 'Ligne de livraison invalide « %rule% » : format attendu pays:zone:service:délai:prix, par ex. FR:ALL:Standard:2-4:9.90 EUR.'
+            required: 'Les flux Stripe nécessitent au moins une ligne de livraison.'
         code:
             unique: 'Ce code est déjà utilisé.'
             not_blank: 'Saisissez un code.'
@@ -16,3 +19,7 @@ tmonier_agentic_feeds:
             not_in_channel: 'Cette langue n’est pas activée dans le canal.'
         currency:
             not_in_channel: 'Cette devise n’est pas disponible dans le canal.'
+            no_exchange_rate: 'Aucun taux de change entre la devise de base du canal et cette devise : ajoutez-en un dans Configuration > Taux de change.'
+    variant:
+        gtin:
+            invalid: 'GTIN invalide (8, 12, 13 ou 14 chiffres avec une clé de contrôle valide, sans préfixe réservé).'

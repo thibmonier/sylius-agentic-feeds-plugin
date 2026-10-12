@@ -15,6 +15,6 @@ interface ProductFeedRepositoryInterface extends RepositoryInterface
     /** @return list<ProductFeedInterface> */
     public function findEnabled(): array;
 
-    /** Marks the enabled feeds as stale (catalog data changed), keeping the first date. */
+    /** Marks the enabled feeds as stale: date of the last catalog change (a generation started before it keeps them stale). */
     public function markStale(\DateTimeInterface $since): void;
 }

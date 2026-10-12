@@ -85,15 +85,18 @@ final class OpenAiJsonlFormat implements FeedFormatInterface
             'mpn' => $item->mpn,
             'color' => $item->color,
             'size' => $item->size,
-            'weight' => $item->weightKg,
+            // A decimal string in the specification.
+            'weight' => null === $item->weightKg ? null : rtrim(rtrim(number_format($item->weightKg, 3, '.', ''), '0'), '.'),
             'item_weight_unit' => null === $item->weightKg ? null : 'kg',
             'is_eligible_search' => true,
             'is_eligible_checkout' => false,
             'return_policy' => $policies['return_policy'] ?? null,
+            // The deadline only goes with accepts_returns: true.
+            'accepts_returns' => isset($policies['return_days']) ? true : null,
             'return_deadline_in_days' => $policies['return_days'] ?? null,
             'seller_privacy_policy' => $policies['privacy_policy'] ?? null,
             'seller_tos' => $policies['terms'] ?? null,
-            'target_countries' => null === $context->countryCode ? null : [$context->countryCode],
+            'target_countries' => \in_array($context->countryCode, self::COUNTRIES, true) ? [$context->countryCode] : null,
         ];
         if ($item->hasVariants && $item->itemGroupId !== $item->id) {
             $fields['group_id'] = $item->itemGroupId;
@@ -102,6 +105,16 @@ final class OpenAiJsonlFormat implements FeedFormatInterface
         }
 
         return array_filter($fields, static fn (mixed $value): bool => null !== $value && '' !== $value);
+    }
+
+    /** Markets of the OpenAI file format (US by default; CA and MX after OpenAI confirmation). */
+    public const COUNTRIES = ['US', 'CA', 'MX'];
+
+    public function validateFeed(FeedContext $context): array
+    {
+        return null === $context->countryCode || \in_array($context->countryCode, self::COUNTRIES, true)
+            ? []
+            : [Issue::warning(Issue::UNSUPPORTED_COUNTRY, 'country', ['%country%' => $context->countryCode])];
     }
 
     public function open(FeedContext $context, array $streams): FeedWriterInterface

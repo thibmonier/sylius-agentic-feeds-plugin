@@ -31,6 +31,8 @@ class ProductFeed implements ProductFeedInterface
 
     protected ?string $accessToken = null;
 
+    protected ?string $shippingRules = null;
+
     protected ?\DateTimeInterface $lastGeneratedAt = null;
 
     protected string $lastStatus = self::STATUS_NEVER;
@@ -135,6 +137,23 @@ class ProductFeed implements ProductFeedInterface
     public function setAccessToken(?string $accessToken): void
     {
         $this->accessToken = null === $accessToken || '' === $accessToken ? null : $accessToken;
+    }
+
+    public function getShippingRules(): array
+    {
+        $lines = preg_split('/\R/', (string) $this->shippingRules) ?: [];
+
+        return array_values(array_filter(array_map('trim', $lines), static fn (string $line): bool => '' !== $line));
+    }
+
+    public function getShippingRulesText(): ?string
+    {
+        return $this->shippingRules;
+    }
+
+    public function setShippingRulesText(?string $shippingRules): void
+    {
+        $this->shippingRules = null === $shippingRules || '' === trim($shippingRules) ? null : trim($shippingRules);
     }
 
     public function getLastGeneratedAt(): ?\DateTimeInterface

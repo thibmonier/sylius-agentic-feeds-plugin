@@ -37,6 +37,11 @@ final class GoogleXmlFormat implements FeedFormatInterface
         return GoogleFields::validate($item);
     }
 
+    public function validateFeed(FeedContext $context): array
+    {
+        return [];
+    }
+
     public function open(FeedContext $context, array $streams): FeedWriterInterface
     {
         return new class($context, $streams['main']) implements FeedWriterInterface {

@@ -1,5 +1,8 @@
 tmonier_agentic_feeds:
     product_feed:
+        shipping_rules:
+            invalid: 'Riga di spedizione non valida «%rule%»: atteso paese:zona:servizio:tempi:prezzo, es. FR:ALL:Standard:2-4:9.90 EUR.'
+            required: 'I feed Stripe richiedono almeno una riga di spedizione.'
         code:
             unique: 'Questo codice è già in uso.'
             not_blank: 'Inserisci un codice.'
@@ -16,3 +19,7 @@ tmonier_agentic_feeds:
             not_in_channel: 'Questa lingua non è attiva nel canale.'
         currency:
             not_in_channel: 'Questa valuta non è disponibile nel canale.'
+            no_exchange_rate: 'Nessun tasso di cambio tra la valuta base del canale e questa valuta: aggiungine uno in Configurazione > Tassi di cambio.'
+    variant:
+        gtin:
+            invalid: 'GTIN non valido (8, 12, 13 o 14 cifre con cifra di controllo valida, senza prefisso riservato).'

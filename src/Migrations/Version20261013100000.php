@@ -30,6 +30,7 @@ final class Version20261013100000 extends AbstractMigration
         $feed->addColumn('country_code', Types::STRING, ['length' => 2, 'notnull' => false]);
         $feed->addColumn('format', Types::STRING, ['length' => 32]);
         $feed->addColumn('access_token', Types::STRING, ['length' => 128, 'notnull' => false]);
+        $feed->addColumn('shipping_rules', Types::TEXT, ['notnull' => false]);
         $feed->addColumn('enabled', Types::BOOLEAN);
         $feed->addColumn('last_generated_at', Types::DATETIME_MUTABLE, ['notnull' => false]);
         $feed->addColumn('last_status', Types::STRING, ['length' => 16]);
@@ -60,10 +61,20 @@ final class Version20261013100000 extends AbstractMigration
         $issue->addIndex(['feed_id', 'severity'], 'idx_tmonier_agentic_feed_issue_severity');
         $issue->addIndex(['feed_id'], 'IDX_AB0D58F651A5BC03');
         $issue->addForeignKeyConstraint('tmonier_agentic_feed', ['feed_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_TMONIER_AGENTIC_FEED_ISSUE_FEED');
+
+        $identifiers = $schema->createTable('tmonier_agentic_variant_identifiers');
+        $identifiers->addColumn('id', Types::INTEGER, ['autoincrement' => true]);
+        $identifiers->addColumn('variant_id', Types::INTEGER);
+        $identifiers->addColumn('gtin', Types::STRING, ['length' => 14, 'notnull' => false]);
+        $identifiers->addColumn('mpn', Types::STRING, ['length' => 70, 'notnull' => false]);
+        $identifiers->setPrimaryKey(['id']);
+        $identifiers->addUniqueIndex(['variant_id'], 'UNIQ_F03AE7A13B69A9AF');
+        $identifiers->addForeignKeyConstraint('sylius_product_variant', ['variant_id'], ['id'], ['onDelete' => 'CASCADE'], 'FK_TMONIER_AGENTIC_VARIANT_IDENTIFIERS');
     }
 
     public function down(Schema $schema): void
     {
+        $schema->dropTable('tmonier_agentic_variant_identifiers');
         $schema->dropTable('tmonier_agentic_feed_issue');
         $schema->dropTable('tmonier_agentic_feed');
     }

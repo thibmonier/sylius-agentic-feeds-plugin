@@ -1,5 +1,8 @@
 tmonier_agentic_feeds:
     product_feed:
+        shipping_rules:
+            invalid: 'Ungültige Versandzeile „%rule%“: erwartet Land:Gebiet:Dienst:Laufzeit:Preis, z. B. FR:ALL:Standard:2-4:9.90 EUR.'
+            required: 'Stripe-Feeds benötigen mindestens eine Versandzeile.'
         code:
             unique: 'Dieser Code wird bereits verwendet.'
             not_blank: 'Geben Sie einen Code ein.'
@@ -16,3 +19,7 @@ tmonier_agentic_feeds:
             not_in_channel: 'Diese Sprache ist im Kanal nicht aktiviert.'
         currency:
             not_in_channel: 'Diese Währung ist im Kanal nicht verfügbar.'
+            no_exchange_rate: 'Kein Wechselkurs zwischen der Basiswährung des Kanals und dieser Währung: unter Konfiguration > Wechselkurse anlegen.'
+    variant:
+        gtin:
+            invalid: 'Ungültiger GTIN (8, 12, 13 oder 14 Ziffern mit gültiger Prüfziffer, kein reserviertes Präfix).'

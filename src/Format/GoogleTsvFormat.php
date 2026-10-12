@@ -45,6 +45,11 @@ final class GoogleTsvFormat implements FeedFormatInterface
         return GoogleFields::validate($item);
     }
 
+    public function validateFeed(FeedContext $context): array
+    {
+        return [];
+    }
+
     public function open(FeedContext $context, array $streams): FeedWriterInterface
     {
         $stream = $streams['main'];

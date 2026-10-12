@@ -11,14 +11,15 @@ use Tmonier\SyliusAgenticFeedsPlugin\Feed\FeedItem;
 /** Items and contexts for the format tests. */
 final class FeedItems
 {
-    public static function context(string $format = 'google_xml', ?string $country = 'FR'): FeedContext
+    /** @param list<string> $shipping */
+    public static function context(string $format = 'google_xml', ?string $country = 'FR', array $shipping = []): FeedContext
     {
         $channel = new Channel();
         $channel->setCode('WEB_FR');
         $channel->setName('Boutique');
         $channel->setHostname('shop.example.com');
 
-        return new FeedContext($channel, 'fr_FR', 'EUR', $country, $format, new \DateTimeImmutable('2026-10-12 10:00:00+02:00'));
+        return new FeedContext($channel, 'fr_FR', 'EUR', $country, $format, new \DateTimeImmutable('2026-10-12 10:00:00+02:00'), $shipping);
     }
 
     /**
@@ -43,6 +44,7 @@ final class FeedItems
         ?string $brand = 'Acme',
         array $options = ['Couleur' => 'Rouge', 'Taille' => 'M'],
         bool $hasVariants = true,
+        bool $shippingRequired = true,
     ): FeedItem {
         return new FeedItem(
             $id,
@@ -72,6 +74,9 @@ final class FeedItems
             'https://shop.example.com',
             'Rouge',
             'M',
+            true,
+            false,
+            $shippingRequired,
         );
     }
 

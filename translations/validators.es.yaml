@@ -1,5 +1,8 @@
 tmonier_agentic_feeds:
     product_feed:
+        shipping_rules:
+            invalid: 'Línea de envío no válida «%rule%»: se espera país:zona:servicio:plazo:precio, p. ej. FR:ALL:Standard:2-4:9.90 EUR.'
+            required: 'Los feeds de Stripe necesitan al menos una línea de envío.'
         code:
             unique: 'Este código ya está en uso.'
             not_blank: 'Introduce un código.'
@@ -16,3 +19,7 @@ tmonier_agentic_feeds:
             not_in_channel: 'Este idioma no está activado en el canal.'
         currency:
             not_in_channel: 'Esta moneda no está disponible en el canal.'
+            no_exchange_rate: 'No hay tipo de cambio entre la moneda base del canal y esta moneda: añada uno en Configuración > Tipos de cambio.'
+    variant:
+        gtin:
+            invalid: 'GTIN no válido (8, 12, 13 o 14 dígitos con dígito de control válido, sin prefijo reservado).'

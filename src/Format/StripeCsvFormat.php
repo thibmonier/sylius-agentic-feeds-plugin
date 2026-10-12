@@ -25,7 +25,7 @@ final class StripeCsvFormat implements FeedFormatInterface
 
     public const REQUIRED = ['title', 'description', 'link', 'image', 'brand'];
 
-    private const PRODUCT = ['id', 'title', 'description', 'link', 'image_link', 'additional_image_link', 'availability', 'inventory_quantity', 'inventory_not_tracked', 'price', 'sale_price', 'sale_price_effective_date', 'tax_behavior', 'brand', 'gtin', 'mpn', 'condition', 'product_category', 'item_group_id', 'color', 'size', 'weight'];
+    private const PRODUCT = ['id', 'title', 'description', 'link', 'image_link', 'additional_image_link', 'availability', 'inventory_quantity', 'inventory_not_tracked', 'price', 'sale_price', 'sale_price_effective_date', 'tax_behavior', 'brand', 'gtin', 'mpn', 'condition', 'product_category', 'item_group_id', 'color', 'size', 'weight', 'shipping'];
 
     private const INVENTORY = ['id', 'availability', 'inventory_quantity'];
 
@@ -89,7 +89,17 @@ final class StripeCsvFormat implements FeedFormatInterface
             'color' => (string) $item->color,
             'size' => null === $item->size ? '' : ItemValidator::cut($item->size, 20),
             'weight' => null === $item->weightKg ? '' : sprintf('%s kg', rtrim(rtrim(number_format($item->weightKg, 3, '.', ''), '0'), '.')),
+            'shipping' => $item->shippingRequired ? implode(',', $context->shippingRules) : '',
         ];
+    }
+
+    /** One entry: country:delivery_area:service:speed_range:price, e.g. "FR:ALL:Standard:2-4:9.90 EUR". */
+    public const SHIPPING_ENTRY = '/^[A-Z]{2}:[^:,]+:[^:,]+:\d+-\d+:\d+(\.\d{1,2})? [A-Z]{3}$/';
+
+    /** Stripe requires "shipping" for physical goods: the feed needs shipping entries. */
+    public function validateFeed(FeedContext $context): array
+    {
+        return [] === $context->shippingRules ? [Issue::error(Issue::MISSING_SHIPPING, 'shipping')] : [];
     }
 
     public function open(FeedContext $context, array $streams): FeedWriterInterface

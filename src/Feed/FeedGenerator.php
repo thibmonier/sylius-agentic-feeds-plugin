@@ -8,12 +8,16 @@ use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Sylius\Component\Core\Model\ChannelInterface;
 use Sylius\Component\Core\Model\ProductVariantInterface;
+use Sylius\Component\Currency\Model\ExchangeRateInterface;
+use Sylius\Component\Currency\Repository\ExchangeRateRepositoryInterface;
 use Sylius\Resource\Factory\FactoryInterface;
 use Tmonier\SyliusAgenticFeedsPlugin\Entity\FeedIssueInterface;
 use Tmonier\SyliusAgenticFeedsPlugin\Entity\ProductFeedInterface;
+use Tmonier\SyliusAgenticFeedsPlugin\Format\FeedFormatInterface;
 use Tmonier\SyliusAgenticFeedsPlugin\Format\FormatRegistry;
 use Tmonier\SyliusAgenticFeedsPlugin\Repository\FeedIssueRepositoryInterface;
 use Tmonier\SyliusAgenticFeedsPlugin\Storage\FeedStorageInterface;
+use Tmonier\SyliusAgenticFeedsPlugin\Validation\Gtin;
 use Tmonier\SyliusAgenticFeedsPlugin\Validation\Issue;
 
 /**
@@ -26,7 +30,10 @@ final class FeedGenerator
     /** Issues stored for the admin report (the counts cover all of them). */
     private const STORED_ISSUES = 5000;
 
-    /** @param FactoryInterface<FeedIssueInterface> $issueFactory */
+    /**
+     * @param FactoryInterface<FeedIssueInterface> $issueFactory
+     * @param ExchangeRateRepositoryInterface<ExchangeRateInterface> $exchangeRateRepository
+     */
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly ItemBuilder $itemBuilder,
@@ -35,6 +42,7 @@ final class FeedGenerator
         private readonly FeedIssueRepositoryInterface $issueRepository,
         private readonly FactoryInterface $issueFactory,
         private readonly LoggerInterface $logger,
+        private readonly ExchangeRateRepositoryInterface $exchangeRateRepository,
         private readonly int $batchSize = 100,
     ) {
     }
@@ -43,6 +51,8 @@ final class FeedGenerator
     public function generate(ProductFeedInterface $feed, bool $dryRun = false): GenerationResult
     {
         $started = hrtime(true);
+        // Catalog changes from this second on make the feed stale again (see record()).
+        $startedAt = new \DateTimeImmutable(date('Y-m-d H:i:s'));
         $feedClass = $feed::class;
         $feedId = $feed->getId();
         $code = (string) $feed->getCode();
@@ -53,6 +63,7 @@ final class FeedGenerator
             $format = $this->formats->get((string) $feed->getFormat());
             $context = FeedContext::fromFeed($feed);
             $channelId = $context->channel->getId();
+            $this->checkFeed($context, $format, $result);
             foreach ($format->getFiles() as $role => $suffix) {
                 $stream = fopen('php://temp/maxmemory:8388608', 'w+b');
                 if (false === $stream) {
@@ -62,7 +73,9 @@ final class FeedGenerator
             }
             $writer = $format->open($context, $streams);
 
+            $gtins = [];
             foreach (array_chunk($this->variantIds($context->channel), max(1, $this->batchSize)) as $ids) {
+                $this->itemBuilder->primeIdentifiers($ids);
                 foreach ($this->variants($ids) as $variant) {
                     $item = $this->itemBuilder->build($variant, $context);
                     if (null === $item) {
@@ -70,7 +83,24 @@ final class FeedGenerator
 
                         continue;
                     }
+                    // One GTIN per item: a duplicate is left out (Google: each variant has its own GTIN).
+                    $gtin = Gtin::normalize($item->gtin);
+                    if (null !== $gtin && isset($gtins[$gtin])) {
+                        $result->add(Issue::warning(Issue::DUPLICATE_GTIN, 'gtin', ['%gtin%' => $gtin, '%item%' => $gtins[$gtin]]), $item->id, $item->productCode);
+                        $item = $item->withoutGtin();
+                    } elseif (null !== $gtin) {
+                        $gtins[$gtin] = $item->id;
+                    }
                     $issues = $format->validate($item);
+                    if ($item->sharedIdentifierIgnored) {
+                        $issues[] = Issue::warning(Issue::SHARED_IDENTIFIER, 'gtin');
+                    }
+                    if ($item->textCleaned) {
+                        $issues[] = Issue::warning(Issue::INVALID_CHARACTERS, 'description');
+                    }
+                    if (!$item->taxIncluded && !\in_array($context->countryCode, FeedItem::TAX_EXCLUSIVE_COUNTRIES, true)) {
+                        $issues[] = Issue::warning(Issue::PRICE_EXCLUDES_TAX, 'price');
+                    }
                     foreach ($issues as $issue) {
                         $result->add($issue, $item->id, $item->productCode);
                     }
@@ -86,7 +116,7 @@ final class FeedGenerator
                     throw new \RuntimeException('The channel of the feed was removed during the generation.');
                 }
                 // Writers only keep scalar data of their context (codes, names, dates).
-                $context = new FeedContext($channel, $context->localeCode, $context->currencyCode, $context->countryCode, $context->format, $context->now);
+                $context = new FeedContext($channel, $context->localeCode, $context->currencyCode, $context->countryCode, $context->format, $context->now, $context->shippingRules);
             }
             $writer->finish();
 
@@ -106,10 +136,32 @@ final class FeedGenerator
         $result->finish((int) ((hrtime(true) - $started) / 1_000_000));
 
         if (!$dryRun) {
-            $this->record($feedClass, $feedId, $result);
+            $this->record($feedClass, $feedId, $result, $startedAt);
         }
 
         return $result;
+    }
+
+    /**
+     * Feed-level checks: an enabled channel, an exchange rate for a foreign currency (Sylius would
+     * otherwise publish unconverted amounts), the format requirements. Errors stop the generation
+     * (the previous files are kept); warnings are reported.
+     */
+    private function checkFeed(FeedContext $context, FeedFormatInterface $format, GenerationResult $result): void
+    {
+        if (!$context->channel->isEnabled()) {
+            throw new \RuntimeException(sprintf('The channel "%s" is disabled.', (string) $context->channel->getCode()));
+        }
+        $base = (string) $context->channel->getBaseCurrency()?->getCode();
+        if ($base !== $context->currencyCode && null === $this->exchangeRateRepository->findOneWithCurrencyPair($base, $context->currencyCode)) {
+            throw new \RuntimeException(sprintf('No exchange rate between %s and %s: prices cannot be converted.', $base, $context->currencyCode));
+        }
+        foreach ($format->validateFeed($context) as $issue) {
+            if ($issue->isError()) {
+                throw new \RuntimeException(sprintf('Feed configuration: %s (%s).', $issue->code, (string) $issue->field));
+            }
+            $result->add($issue, null, null);
+        }
     }
 
     /** @return list<int> */
@@ -160,7 +212,7 @@ final class FeedGenerator
     }
 
     /** @param class-string $feedClass */
-    private function record(string $feedClass, mixed $feedId, GenerationResult $result): void
+    private function record(string $feedClass, mixed $feedId, GenerationResult $result, \DateTimeImmutable $startedAt): void
     {
         $feed = $this->entityManager->find($feedClass, $feedId);
         if (!$feed instanceof ProductFeedInterface) {
@@ -168,7 +220,10 @@ final class FeedGenerator
         }
         $feed->recordGeneration(new \DateTime(), $result->status(), $result->items(), $result->errorCount(), $result->warningCount(), $result->durationMs(), $result->failure());
         if (!$result->failed()) {
-            $feed->setStaleSince(null);
+            // A change during the generation (staleSince at or after the start) keeps it stale.
+            if (null === $feed->getStaleSince() || $feed->getStaleSince() < $startedAt) {
+                $feed->setStaleSince(null);
+            }
             $this->issueRepository->deleteByFeed($feed);
             foreach (\array_slice($result->issues(), 0, self::STORED_ISSUES) as [$issue, $itemId, $productCode]) {
                 $entity = $this->issueFactory->createNew();

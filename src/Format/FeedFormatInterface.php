@@ -32,6 +32,13 @@ interface FeedFormatInterface
      */
     public function validate(FeedItem $item): array;
 
+    /**
+     * Feed-level checks (configuration the format needs); errors stop the generation.
+     *
+     * @return list<Issue>
+     */
+    public function validateFeed(FeedContext $context): array;
+
     /** @param array<string, resource> $streams one writable stream per role of getFiles() */
     public function open(FeedContext $context, array $streams): FeedWriterInterface;
 }

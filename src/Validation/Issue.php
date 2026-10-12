@@ -23,6 +23,18 @@ final class Issue
 
     public const NO_SALE_END_DATE = 'no_sale_end_date';
 
+    public const INVALID_CHARACTERS = 'invalid_characters';
+
+    public const PRICE_EXCLUDES_TAX = 'price_excludes_tax';
+
+    public const SHARED_IDENTIFIER = 'shared_identifier';
+
+    public const DUPLICATE_GTIN = 'duplicate_gtin';
+
+    public const UNSUPPORTED_COUNTRY = 'unsupported_country';
+
+    public const MISSING_SHIPPING = 'missing_shipping';
+
     /** @param array<string, string|int> $parameters */
     public function __construct(
         public readonly string $severity,

@@ -1,5 +1,8 @@
 tmonier_agentic_feeds:
     product_feed:
+        shipping_rules:
+            invalid: 'Ongeldige verzendregel "%rule%": verwacht land:gebied:dienst:levertijd:prijs, bijv. FR:ALL:Standard:2-4:9.90 EUR.'
+            required: 'Stripe-feeds hebben minstens één verzendregel nodig.'
         code:
             unique: 'Deze code is al in gebruik.'
             not_blank: 'Voer een code in.'
@@ -16,3 +19,7 @@ tmonier_agentic_feeds:
             not_in_channel: 'Deze taal is niet ingeschakeld in het kanaal.'
         currency:
             not_in_channel: 'Deze valuta is niet beschikbaar in het kanaal.'
+            no_exchange_rate: 'Geen wisselkoers tussen de basisvaluta van het kanaal en deze valuta: voeg er een toe via Configuratie > Wisselkoersen.'
+    variant:
+        gtin:
+            invalid: 'Ongeldig GTIN (8, 12, 13 of 14 cijfers met een geldig controlecijfer, geen gereserveerd voorvoegsel).'

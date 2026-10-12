@@ -13,8 +13,11 @@ use Sylius\Component\Core\Model\ProductVariantInterface;
 use Sylius\Component\Core\Model\TaxonInterface;
 use Sylius\Component\Currency\Converter\CurrencyConverterInterface;
 use Sylius\Component\Taxation\Calculator\CalculatorInterface;
+use Sylius\Component\Taxation\Model\TaxRateInterface;
 use Sylius\Component\Taxation\Resolver\TaxRateResolverInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Tmonier\SyliusAgenticFeedsPlugin\Entity\VariantIdentifiersInterface;
+use Tmonier\SyliusAgenticFeedsPlugin\Repository\VariantIdentifiersRepositoryInterface;
 
 /**
  * Builds the neutral item of a variant for a feed context.
@@ -22,11 +25,18 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
  * Prices (Omnibus-safe): the current channel price; a sale price only when a catalog promotion
  * is applied to it and Sylius knows the lowest price of the 30 days before the reduction (the
  * reference price shown struck through, never the manual "original price"). Prices are
- * converted to the feed currency and include the tax of the channel default tax zone when the
- * rate does not include it (EU price display).
+ * converted to the feed currency and are the prices the shop displays: with the tax when the
+ * rate of the channel default tax zone includes it, without otherwise (taxIncluded tells which).
+ * US and Canada feeds get prices without tax (the included tax is removed).
  */
 final class ItemBuilder
 {
+    /** @var array<int, VariantIdentifiersInterface> identifiers of the primed batch, by variant id */
+    private array $identifiers = [];
+
+    /** @var list<int> */
+    private array $primed = [];
+
     /** @param array{gtin: ?string, mpn: ?string, brand: ?string} $attributes product attribute codes */
     public function __construct(
         private readonly UrlGeneratorInterface $urlGenerator,
@@ -34,6 +44,7 @@ final class ItemBuilder
         private readonly TaxRateResolverInterface $taxRateResolver,
         private readonly CalculatorInterface $taxCalculator,
         private readonly ProductVariantPricesCalculatorInterface $pricesCalculator,
+        private readonly VariantIdentifiersRepositoryInterface $identifiersRepository,
         private readonly array $attributes,
         private readonly ?string $defaultBrand,
         private readonly string $condition,
@@ -52,17 +63,22 @@ final class ItemBuilder
         $locale = $context->localeCode;
         $hasVariants = $product->getEnabledVariants()->count() > 1;
 
-        [$price, $salePrice, $saleStart, $saleEnd] = $this->prices($variant, $pricing, $context);
+        [$taxIncluded, $rate] = $this->tax($variant, $context);
+        [$price, $salePrice, $saleStart, $saleEnd] = $this->prices($variant, $pricing, $context, $rate, $taxIncluded);
+        $title = self::clean($this->title($product, $variant, $locale, $hasVariants));
+        $description = self::clean((string) ($product->getTranslation($locale)->getDescription() ?? $product->getTranslation($locale)->getShortDescription() ?? ''));
+        $description[0] = self::plainText($description[0]);
 
         $quantity = $variant->isTracked() ? max(0, (int) $variant->getOnHand() - (int) $variant->getOnHold()) : null;
         [$image, $additionalImages] = $this->images($product, $variant, $context);
+        [$gtin, $mpn, $sharedIgnored] = $this->identifiers($product, $variant, $locale, $hasVariants);
 
         return new FeedItem(
             (string) $variant->getCode(),
             (string) $product->getCode(),
             (string) $product->getCode(),
-            $this->title($product, $variant, $locale, $hasVariants),
-            self::plainText((string) ($product->getTranslation($locale)->getDescription() ?? $product->getTranslation($locale)->getShortDescription() ?? '')),
+            $title[0],
+            $description[0],
             $this->link($product, $context),
             $image,
             $additionalImages,
@@ -73,8 +89,8 @@ final class ItemBuilder
             $saleEnd,
             null === $quantity || $quantity > 0 ? FeedItem::IN_STOCK : FeedItem::OUT_OF_STOCK,
             $quantity,
-            $this->attribute($product, $this->attributes['gtin'], $locale),
-            $this->attribute($product, $this->attributes['mpn'], $locale),
+            $gtin,
+            $mpn,
             $this->attribute($product, $this->attributes['brand'], $locale) ?? $this->defaultBrand,
             $this->condition,
             $this->productType($product->getMainTaxon(), $locale),
@@ -85,7 +101,43 @@ final class ItemBuilder
             $this->baseUrl($context),
             $this->optionByCode($variant, ['color', 'colour'], $locale),
             $this->optionByCode($variant, ['size'], $locale),
+            $taxIncluded,
+            $title[1] || $description[1],
+            $variant->isShippingRequired(),
+            $sharedIgnored,
         );
+    }
+
+    /**
+     * Loads the identifiers of a batch of variants in one query (generation).
+     *
+     * @param list<int> $variantIds
+     */
+    public function primeIdentifiers(array $variantIds): void
+    {
+        $this->identifiers = $this->identifiersRepository->findByVariantIds($variantIds);
+        $this->primed = $variantIds;
+    }
+
+    /**
+     * GTIN and MPN of the variant (plugin field); the product attributes only for a product
+     * without variants: one GTIN is never repeated on several variants.
+     *
+     * @return array{?string, ?string, bool} gtin, mpn, product-level identifier ignored
+     */
+    private function identifiers(ProductInterface $product, ProductVariantInterface $variant, string $locale, bool $hasVariants): array
+    {
+        $id = $variant->getId();
+        $own = \is_int($id) && \in_array($id, $this->primed, true) ? ($this->identifiers[$id] ?? null) : $this->identifiersRepository->findOneByVariant($variant);
+        $gtin = $own?->getGtin();
+        $mpn = $own?->getMpn();
+        $productGtin = $this->attribute($product, $this->attributes['gtin'], $locale);
+        $productMpn = $this->attribute($product, $this->attributes['mpn'], $locale);
+        if (!$hasVariants) {
+            return [$gtin ?? $productGtin, $mpn ?? $productMpn, false];
+        }
+
+        return [$gtin, $mpn, (null === $gtin && null !== $productGtin) || (null === $mpn && null !== $productMpn)];
     }
 
     /** HTML to plain text: tags removed (with a space for block ends), entities decoded, spaces collapsed. */
@@ -97,8 +149,20 @@ final class ItemBuilder
         return trim(preg_replace('/\s+/u', ' ', $text) ?? $text);
     }
 
+    /**
+     * Removes the characters XML 1.0 forbids (control characters of ERP or office copies).
+     *
+     * @return array{string, bool} text, whether something was removed
+     */
+    public static function clean(string $text): array
+    {
+        $clean = preg_replace('/[^\x{9}\x{A}\x{D}\x{20}-\x{D7FF}\x{E000}-\x{FFFD}\x{10000}-\x{10FFFF}]/u', '', $text) ?? '';
+
+        return [$clean, $clean !== $text];
+    }
+
     /** @return array{int, ?int, ?\DateTimeInterface, ?\DateTimeInterface} price, sale price, sale start, sale end */
-    private function prices(ProductVariantInterface $variant, ChannelPricingInterface $pricing, FeedContext $context): array
+    private function prices(ProductVariantInterface $variant, ChannelPricingInterface $pricing, FeedContext $context, ?TaxRateInterface $rate, bool $taxIncluded): array
     {
         $current = (int) $pricing->getPrice();
         $reference = null;
@@ -119,7 +183,7 @@ final class ItemBuilder
             }
         }
 
-        $amount = fn (int $value): int => $this->withTax($variant, $this->convert($value, $context), $context);
+        $amount = fn (int $value): int => $this->forTarget($this->convert($value, $context), $rate, $taxIncluded);
 
         return null === $reference
             ? [$amount($current), null, null, null]
@@ -133,18 +197,31 @@ final class ItemBuilder
         return null === $base || $base === $context->currencyCode ? $amount : $this->currencyConverter->convert($amount, $base, $context->currencyCode);
     }
 
-    private function withTax(ProductVariantInterface $variant, int $amount, FeedContext $context): int
+    /**
+     * Tax situation of the price the shop displays (rate of the channel default tax zone).
+     *
+     * @return array{bool, ?TaxRateInterface} price includes the tax in the feed, rate
+     */
+    private function tax(ProductVariantInterface $variant, FeedContext $context): array
     {
         $zone = $context->channel->getDefaultTaxZone();
-        if (null === $zone) {
-            return $amount;
+        $rate = null === $zone ? null : $this->taxRateResolver->resolve($variant, ['zone' => $zone]);
+        if (\in_array($context->countryCode, FeedItem::TAX_EXCLUSIVE_COUNTRIES, true)) {
+            return [false, $rate];
         }
-        $rate = $this->taxRateResolver->resolve($variant, ['zone' => $zone]);
-        if (null === $rate || $rate->isIncludedInPrice()) {
+
+        // No rate: the displayed price is the final price.
+        return [null === $rate || $rate->isIncludedInPrice(), $rate];
+    }
+
+    /** US/CA feeds: the tax included in the displayed price is removed; otherwise the displayed price. */
+    private function forTarget(int $amount, ?TaxRateInterface $rate, bool $taxIncluded): int
+    {
+        if ($taxIncluded || null === $rate || !$rate->isIncludedInPrice()) {
             return $amount;
         }
 
-        return $amount + (int) round($this->taxCalculator->calculate((float) $amount, $rate));
+        return $amount - (int) round($this->taxCalculator->calculate((float) $amount, $rate));
     }
 
     private function title(ProductInterface $product, ProductVariantInterface $variant, string $locale, bool $hasVariants): string

@@ -42,4 +42,23 @@ final class ShopJsonLdTest extends WebTestCase
         self::assertIsString($data['url']);
         self::assertStringNotContainsString('utm_', $data['url']);
     }
+
+    public function testTheOfferPriceIsTheDisplayedPrice(): void
+    {
+        $this->catalog->useShopChannel();
+        $product = $this->catalog->product('LDTAX', [10000]);
+        $this->catalog->image($product, 'a/ldtax.jpg');
+        // 20 % not included: the page shows the channel price without tax.
+        $this->catalog->tax($this->catalog->variant($product), 0.2);
+
+        $crawler = $this->client->request('GET', '/en_US/products/' . $product->getSlug());
+
+        self::assertResponseIsSuccessful();
+        $data = json_decode($crawler->filter('script[data-tmonier-agentic-feeds]')->text(), true, 512, \JSON_THROW_ON_ERROR);
+        self::assertIsArray($data);
+        self::assertIsArray($data['offers']);
+        self::assertIsArray($data['offers'][0]);
+        self::assertSame('100.00', $data['offers'][0]['price']);
+        self::assertStringContainsString('100.00', $crawler->filter('[data-test-product-price]')->text());
+    }
 }

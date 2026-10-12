@@ -42,6 +42,8 @@ tmonier_agentic_feeds:
         gtin: 'GTIN'
         seller_name: 'nom du vendeur'
         sale_price: 'prix soldé'
+        shipping: 'livraison'
+        country: 'pays'
     issue:
         missing_price: 'Aucun prix dans le canal.'
         missing_field: 'Champ obligatoire manquant : %field%.'
@@ -49,6 +51,12 @@ tmonier_agentic_feeds:
         invalid_gtin: 'GTIN « %gtin% » invalide (longueur, clé de contrôle ou préfixe réservé) : exclu du fichier.'
         no_identifiers: 'Ni GTIN ni MPN : envoyé avec identifier_exists = no lorsque le format le prévoit.'
         no_sale_end_date: 'La promotion catalogue n’a pas de date de fin : le prix réduit est envoyé comme prix, sans prix soldé.'
+        price_excludes_tax: 'Le prix est hors taxes (comme l’affiche la boutique) ; Google exige des prix TTC hors États-Unis et Canada.'
+        invalid_characters: 'Des caractères de contrôle invalides en XML ont été retirés des textes.'
+        shared_identifier: 'Le GTIN/MPN de l’attribut produit n’est pas répété sur ses variantes : saisissez un GTIN par variante (formulaire de variante ou tmonier:feeds:import-identifiers).'
+        duplicate_gtin: 'GTIN %gtin% déjà utilisé par %item% : retiré de cet article.'
+        unsupported_country: 'Le format OpenAI couvre les États-Unis (et CA, MX après confirmation) : pays cible %country% non envoyé.'
+        missing_shipping: 'Stripe exige la livraison pour les biens physiques : ajoutez des lignes de livraison au flux.'
     form:
         code_help: 'Lettres, chiffres, "-" et "_". Fait partie de l’URL du flux : /feeds/<code>.'
         locale_help: 'Langue des titres et descriptions (l’une des langues du canal).'
@@ -61,5 +69,10 @@ tmonier_agentic_feeds:
         access_token: 'Jeton d’accès'
         access_token_help: 'Facultatif, 16 caractères minimum : l’URL du flux nécessite alors ?token=... (ou l’en-tête X-Feed-Token).'
         disclaimer: 'Un flux rend votre catalogue lisible par les comparateurs et les assistants IA ; il ne garantit aucune visibilité, et les acheteurs finalisent leur commande sur votre boutique.'
+        shipping_rules: 'Livraison (Stripe)'
+        shipping_rules_help: 'Obligatoire pour les flux Stripe, une ligne par entrée : pays:zone:service:délai:prix, par ex. FR:ALL:Standard:2-4:9.90 EUR (envoyé pour les produits à expédier).'
+        gtin: 'GTIN'
+        gtin_help: 'EAN/UPC de cette variante (8, 12, 13 ou 14 chiffres) pour les flux produits ; un par variante.'
+        mpn: 'MPN'
     webhook:
         price_changed: 'Prix d’une variante de produit modifié'

@@ -40,6 +40,8 @@ final class TestCatalog
 
     private ?ChannelInterface $channel = null;
 
+    private int $feeds = 0;
+
     public function __construct(private readonly ContainerInterface $container)
     {
         $this->suffix = strtoupper(bin2hex(random_bytes(3)));
@@ -205,6 +207,15 @@ final class TestCatalog
         $this->entityManager()->flush();
     }
 
+    /** GTIN / MPN of a variant (plugin field). */
+    public function identifiers(ProductVariantInterface $variant, ?string $gtin, ?string $mpn = null): void
+    {
+        $manager = $this->container->get('tmonier_agentic_feeds.identifiers_manager');
+        Assert::isInstanceOf($manager, \Tmonier\SyliusAgenticFeedsPlugin\Form\VariantIdentifiersManager::class);
+        $manager->write($variant, $gtin, $mpn);
+        $this->entityManager()->flush();
+    }
+
     /** A catalog promotion applied to the variant price: current price $price, 30-day lowest $lowest. */
     public function promotion(ProductVariantInterface $variant, int $price, ?int $lowest, ?\DateTimeInterface $end): void
     {
@@ -227,8 +238,8 @@ final class TestCatalog
         $this->entityManager()->flush();
     }
 
-    /** A rate of $amount (e.g. 0.2) not included in prices, in a new default tax zone of the channel. */
-    public function tax(ProductVariantInterface $variant, float $amount): void
+    /** A rate of $amount (e.g. 0.2), included in prices or not, in a new default tax zone of the channel. */
+    public function tax(ProductVariantInterface $variant, float $amount, bool $included = false): void
     {
         /** @var FactoryInterface<ZoneInterface> $zoneFactory */
         $zoneFactory = $this->container->get('sylius.factory.zone');
@@ -256,7 +267,7 @@ final class TestCatalog
         $rate->setCode('TR_' . $this->suffix);
         $rate->setName('VAT');
         $rate->setAmount($amount);
-        $rate->setIncludedInPrice(false);
+        $rate->setIncludedInPrice($included);
         $rate->setCalculator('default');
         $rate->setZone($zone);
         $rate->setCategory($category);
@@ -286,17 +297,18 @@ final class TestCatalog
         return $taxon;
     }
 
-    public function feed(string $format, ?string $token = null, string $currency = 'EUR'): ProductFeedInterface
+    public function feed(string $format, ?string $token = null, string $currency = 'EUR', ?string $country = 'FR'): ProductFeedInterface
     {
         /** @var FactoryInterface<ProductFeedInterface> $factory */
         $factory = $this->container->get('tmonier_agentic_feeds.factory.product_feed');
         $feed = $factory->createNew();
-        $feed->setCode(strtolower($format . '_' . $this->suffix));
+        $feed->setCode(strtolower(sprintf('%s_%s_%d', $format, $this->suffix, ++$this->feeds)));
         $feed->setName('Feed ' . $format);
         $feed->setChannel($this->channel());
         $feed->setLocaleCode(self::LOCALE);
         $feed->setCurrencyCode($currency);
-        $feed->setCountryCode('FR');
+        $feed->setCountryCode($country);
+        $feed->setShippingRulesText(sprintf("FR:ALL:Standard:2-4:9.90 %s\nBE:ALL:Standard:3-5:12.90 %s", $currency, $currency));
         $feed->setFormat($format);
         $feed->setAccessToken($token);
         $feed->setEnabled(true);

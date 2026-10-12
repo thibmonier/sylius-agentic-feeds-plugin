@@ -35,7 +35,6 @@ class ProductFeedRepository extends EntityRepository implements ProductFeedRepos
             ->update()
             ->set('o.staleSince', ':since')
             ->andWhere('o.enabled = true')
-            ->andWhere('o.staleSince IS NULL')
             ->setParameter('since', $since)
             ->getQuery()
             ->execute()

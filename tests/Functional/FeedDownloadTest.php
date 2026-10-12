@@ -71,4 +71,21 @@ final class FeedDownloadTest extends WebTestCase
         $this->client->request('GET', '/feeds/' . $code, server: ['HTTP_X_FEED_TOKEN' => $token]);
         self::assertResponseIsSuccessful();
     }
+
+    public function testFeedsOfADisabledChannelAreNotServed(): void
+    {
+        $product = $this->catalog->product('CHANNELOFF', [1000]);
+        $this->catalog->image($product, 'a/channeloff.jpg');
+        $feed = $this->catalog->feed(GoogleXmlFormat::CODE);
+        $code = (string) $feed->getCode();
+        $this->generate($feed);
+        $channel = $this->entityManager()->getRepository(\Sylius\Component\Core\Model\ChannelInterface::class)->findOneBy(['code' => $this->catalog->channel()->getCode()]);
+        self::assertInstanceOf(\Sylius\Component\Core\Model\ChannelInterface::class, $channel);
+        $channel->setEnabled(false);
+        $this->entityManager()->flush();
+
+        $this->client->request('GET', '/feeds/' . $code);
+
+        self::assertResponseStatusCodeSame(404);
+    }
 }

@@ -57,6 +57,17 @@ interface ProductFeedInterface extends ResourceInterface, CodeAwareInterface, To
 
     public function setAccessToken(?string $accessToken): void;
 
+    /**
+     * Stripe "shipping" entries, one per line: country:delivery_area:service:speed_range:price.
+     *
+     * @return list<string>
+     */
+    public function getShippingRules(): array;
+
+    public function getShippingRulesText(): ?string;
+
+    public function setShippingRulesText(?string $shippingRules): void;
+
     public function getLastGeneratedAt(): ?\DateTimeInterface;
 
     public function getLastStatus(): string;

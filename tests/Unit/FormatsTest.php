@@ -77,7 +77,10 @@ final class FormatsTest extends TestCase
         self::assertSame('Boutique', $first['seller_name']);
         self::assertSame('https://shop.example.com/returns', $first['return_policy']);
         self::assertSame(30, $first['return_deadline_in_days']);
-        self::assertSame(['FR'], $first['target_countries']);
+        self::assertArrayNotHasKey('target_countries', $first, 'FR is not a market of the OpenAI format.');
+        self::assertTrue($first['accepts_returns']);
+        self::assertSame('0.25', $first['weight']);
+        self::assertSame('kg', $first['item_weight_unit']);
         self::assertArrayNotHasKey('mpn', $first, 'No placeholders: absent values are left out.');
 
         $second = json_decode($lines[1], true, 512, \JSON_THROW_ON_ERROR);
@@ -91,7 +94,7 @@ final class FormatsTest extends TestCase
         $files = $this->write(new StripeCsvFormat(), [FeedItems::onSale(), FeedItems::item(id: 'UNTRACKED', quantity: null)], 'stripe_csv');
 
         $products = $this->csv($files['main']);
-        self::assertSame(['id', 'title', 'description', 'link', 'image_link', 'additional_image_link', 'availability', 'inventory_quantity', 'inventory_not_tracked', 'price', 'sale_price', 'sale_price_effective_date', 'tax_behavior', 'brand', 'gtin', 'mpn', 'condition', 'product_category', 'item_group_id', 'color', 'size', 'weight'], array_keys($products[0]));
+        self::assertSame(['id', 'title', 'description', 'link', 'image_link', 'additional_image_link', 'availability', 'inventory_quantity', 'inventory_not_tracked', 'price', 'sale_price', 'sale_price_effective_date', 'tax_behavior', 'brand', 'gtin', 'mpn', 'condition', 'product_category', 'item_group_id', 'color', 'size', 'weight', 'shipping'], array_keys($products[0]));
         self::assertSame('19.90 EUR', $products[0]['sale_price']);
         self::assertSame('2026-10-01/2026-10-31', $products[0]['sale_price_effective_date']);
         self::assertSame('https://shop.example.com/media/image/b%2C1.jpg', $products[0]['additional_image_link']);
@@ -103,6 +106,25 @@ final class FormatsTest extends TestCase
         self::assertSame([['id' => 'TSHIRT-RED-M', 'availability' => 'in_stock', 'inventory_quantity' => '12']], $this->csv($files['inventory']), 'Tracked variants only.');
         $pricing = $this->csv($files['pricing']);
         self::assertSame(['id' => 'TSHIRT-RED-M', 'price' => '25.00 EUR', 'sale_price' => '19.90 EUR', 'sale_price_effective_date' => '2026-10-01/2026-10-31'], $pricing[0]);
+    }
+
+    public function testStripeShippingAndFeedChecks(): void
+    {
+        $format = new StripeCsvFormat();
+        $streams = FeedItems::streams(array_keys($format->getFiles()));
+        $context = FeedItems::context('stripe_csv', 'FR', ['FR:ALL:Standard:2-4:9.90 EUR', 'BE:ALL:Express:1-2:19.90 EUR']);
+        $writer = $format->open($context, $streams);
+        $writer->write(FeedItems::item());
+        $writer->write(FeedItems::item(id: 'EBOOK', shippingRequired: false));
+        $writer->finish();
+        $products = $this->csv(FeedItems::contents($streams)['main']);
+
+        self::assertSame('FR:ALL:Standard:2-4:9.90 EUR,BE:ALL:Express:1-2:19.90 EUR', $products[0]['shipping']);
+        self::assertSame('', $products[1]['shipping'], 'Digital products: no shipping.');
+        self::assertSame([], $format->validateFeed($context));
+        self::assertSame([Issue::MISSING_SHIPPING], array_map(static fn (Issue $issue): string => $issue->code, $format->validateFeed(FeedItems::context('stripe_csv'))));
+        self::assertSame([Issue::UNSUPPORTED_COUNTRY], array_map(static fn (Issue $issue): string => $issue->code, (new OpenAiJsonlFormat())->validateFeed(FeedItems::context('openai_jsonl', 'FR'))));
+        self::assertSame([], (new OpenAiJsonlFormat())->validateFeed(FeedItems::context('openai_jsonl', 'US')));
     }
 
     public function testStripeShowsNoReductionWithoutEndDate(): void

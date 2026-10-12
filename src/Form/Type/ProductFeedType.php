@@ -13,6 +13,7 @@ use Sylius\Resource\Doctrine\Persistence\RepositoryInterface;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\CountryType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Tmonier\SyliusAgenticFeedsPlugin\Format\FormatRegistry;
@@ -81,6 +82,12 @@ final class ProductFeedType extends AbstractResourceType
                 'help' => 'tmonier_agentic_feeds.form.access_token_help',
                 'required' => false,
                 'attr' => ['autocomplete' => 'off'],
+            ])
+            ->add('shippingRulesText', TextareaType::class, [
+                'label' => 'tmonier_agentic_feeds.form.shipping_rules',
+                'help' => 'tmonier_agentic_feeds.form.shipping_rules_help',
+                'required' => false,
+                'attr' => ['rows' => 3, 'placeholder' => 'FR:ALL:Standard:2-4:9.90 EUR'],
             ])
             ->add('enabled', CheckboxType::class, ['label' => 'sylius.ui.enabled', 'required' => false])
         ;

@@ -1,0 +1,8 @@
+{# Simple products: GTIN / MPN of their variant, embedded as "variant" in the product form. #}
+{% set form = hookable_metadata.context.form %}
+{% if form.variant.tmonierAgenticFeeds is defined %}
+    <div class="row" {{ sylius_test_html_attribute('tmonier-agentic-feeds-identifiers') }}>
+        <div class="col-12 col-md-6">{{ form_row(form.variant.tmonierAgenticFeeds.gtin) }}</div>
+        <div class="col-12 col-md-6">{{ form_row(form.variant.tmonierAgenticFeeds.mpn) }}</div>
+    </div>
+{% endif %}

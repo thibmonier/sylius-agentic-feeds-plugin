@@ -14,8 +14,11 @@ use Tmonier\SyliusAgenticFeedsPlugin\Entity\FeedIssue;
 use Tmonier\SyliusAgenticFeedsPlugin\Entity\FeedIssueInterface;
 use Tmonier\SyliusAgenticFeedsPlugin\Entity\ProductFeed;
 use Tmonier\SyliusAgenticFeedsPlugin\Entity\ProductFeedInterface;
+use Tmonier\SyliusAgenticFeedsPlugin\Entity\VariantIdentifiers;
+use Tmonier\SyliusAgenticFeedsPlugin\Entity\VariantIdentifiersInterface;
 use Tmonier\SyliusAgenticFeedsPlugin\Repository\FeedIssueRepository;
 use Tmonier\SyliusAgenticFeedsPlugin\Repository\ProductFeedRepository;
+use Tmonier\SyliusAgenticFeedsPlugin\Repository\VariantIdentifiersRepository;
 
 final class Configuration implements ConfigurationInterface
 {
@@ -97,6 +100,7 @@ final class Configuration implements ConfigurationInterface
                     ->children()
                         ->append($this->resource('product_feed', ProductFeed::class, ProductFeedInterface::class, ProductFeedRepository::class))
                         ->append($this->resource('feed_issue', FeedIssue::class, FeedIssueInterface::class, FeedIssueRepository::class))
+                        ->append($this->resource('variant_identifiers', VariantIdentifiers::class, VariantIdentifiersInterface::class, VariantIdentifiersRepository::class))
                     ->end()
                 ->end()
             ->end()

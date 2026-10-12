@@ -85,4 +85,61 @@ final class AdminTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertStringContainsString('Admin feed', $crawler->filter('.breadcrumb')->text());
     }
+
+    public function testFeedValidationAndVariantIdentifiers(): void
+    {
+        $channelCode = (string) $this->catalog->channel()->getCode();
+        $this->catalog->channel()->addCurrency($this->catalog->currency('SEK'));
+        $product = $this->catalog->product('IDS', [1000, 1200]);
+        $variant = $this->catalog->variant($product);
+        $this->entityManager()->flush();
+        $this->loginAdmin();
+
+        $this->client->request('POST', '/admin/product-feeds/new', ['tmonier_agentic_feeds_product_feed' => [
+            'code' => strtolower('stripe_' . $this->catalog->suffix),
+            'name' => 'Stripe',
+            'channel' => $channelCode,
+            'localeCode' => 'en_US',
+            'currencyCode' => 'SEK',
+            'format' => 'stripe_csv',
+            'shippingRulesText' => "FR:ALL:Standard:2-4:9.90 EUR\nnot a rule",
+            '_token' => $this->csrfToken(),
+        ]]);
+        self::assertResponseStatusCodeSame(422);
+        $content = (string) $this->client->getResponse()->getContent();
+        self::assertStringContainsString('No exchange rate between the channel base currency and this currency', $content);
+        self::assertStringContainsString('Invalid shipping entry', $content);
+
+        $productId = $product->getId();
+        $variantId = $variant->getId();
+        self::assertIsInt($productId);
+        self::assertIsInt($variantId);
+        $url = sprintf('/admin/products/%d/variants/%d/edit', $productId, $variantId);
+        $crawler = $this->client->request('GET', $url);
+        self::assertResponseIsSuccessful();
+        self::assertCount(1, $crawler->filter('[data-test-tmonier-agentic-feeds-identifiers]'));
+        $values = $crawler->selectButton('Update')->form()->getPhpValues();
+        $formName = array_key_first(array_filter($values, static fn (mixed $value): bool => \is_array($value) && \array_key_exists('tmonierAgenticFeeds', $value)));
+        self::assertIsString($formName);
+        self::assertIsArray($values[$formName]);
+        $values[$formName]['tmonierAgenticFeeds'] = ['gtin' => '123', 'mpn' => 'X'];
+        $this->client->request('POST', $url, $values);
+        self::assertResponseStatusCodeSame(422, 'Invalid GTIN.');
+        $values[$formName]['tmonierAgenticFeeds'] = ['gtin' => '4006381333931', 'mpn' => 'X-1'];
+        $this->client->request('POST', $url, $values);
+        self::assertResponseRedirects();
+        $this->entityManager()->clear();
+        $identifiers = $this->entityManager()->getRepository(\Tmonier\SyliusAgenticFeedsPlugin\Entity\VariantIdentifiersInterface::class)->findOneBy(['variant' => $variant->getId()]);
+        self::assertInstanceOf(\Tmonier\SyliusAgenticFeedsPlugin\Entity\VariantIdentifiersInterface::class, $identifiers);
+        self::assertSame(['4006381333931', 'X-1'], [$identifiers->getGtin(), $identifiers->getMpn()]);
+    }
+
+    private function csrfToken(): string
+    {
+        $crawler = $this->client->request('GET', '/admin/product-feeds/new');
+        $token = $crawler->filter('input[name="tmonier_agentic_feeds_product_feed[_token]"]')->attr('value');
+        self::assertIsString($token);
+
+        return $token;
+    }
 }

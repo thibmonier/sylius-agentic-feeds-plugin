@@ -85,7 +85,7 @@ final class TranslationsTest extends TestCase
                 if (!$file instanceof \SplFileInfo || !in_array($file->getExtension(), ['php', 'twig', 'yaml', 'xml'], true) || str_starts_with($file->getFilename(), 'services')) {
                     continue;
                 }
-                preg_match_all('/tmonier_agentic_feeds\.(?:ui|form|format|status|file|severity|field|issue|webhook|flash|product_feed)(?:\.[a-z_]*[a-z_])?/', (string) file_get_contents($file->getPathname()), $matches);
+                preg_match_all('/tmonier_agentic_feeds\.(?:ui|form|format|status|file|severity|field|issue|webhook|flash|product_feed|variant)(?:\.[a-z_]*[a-z_])?/', (string) file_get_contents($file->getPathname()), $matches);
                 foreach ($matches[0] as $key) {
                     $used[$key] = true;
                 }

@@ -63,6 +63,7 @@ final class ProductFeedFixture extends AbstractFixture
                 $feed->setFormat($format);
                 if ('stripe' === $prefix) {
                     $feed->setAccessToken('demo-' . bin2hex(random_bytes(12)));
+                    $feed->setShippingRulesText(sprintf('%s:ALL:Standard:2-5:9.90 %s', 'USD' === $currency ? 'US' : 'FR', $currency));
                 }
                 $feed->setEnabled(true);
                 $this->manager->persist($feed);
