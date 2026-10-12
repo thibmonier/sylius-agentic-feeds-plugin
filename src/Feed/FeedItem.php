@@ -54,6 +54,10 @@ final class FeedItem
         public readonly bool $shippingRequired = true,
         /** The product has a GTIN/MPN attribute but several variants: not repeated on each variant. */
         public readonly bool $sharedIdentifierIgnored = false,
+        /** The channel has no default tax zone: whether the price includes tax is unknown. */
+        public readonly bool $taxUnknown = false,
+        /** A GTIN exists but is not sent (duplicate of another item). */
+        public readonly bool $identifierWithheld = false,
     ) {
     }
 
@@ -92,7 +96,18 @@ final class FeedItem
             $this->textCleaned,
             $this->shippingRequired,
             $this->sharedIdentifierIgnored,
+            $this->taxUnknown,
+            true,
         );
+    }
+
+    /**
+     * The product genuinely has no identifier: no GTIN (valid or not), no MPN, none left out
+     * (Google identifier_exists "no" only when certain).
+     */
+    public function hasNoIdentifier(): bool
+    {
+        return null === $this->gtin && null === $this->mpn && !$this->sharedIdentifierIgnored && !$this->identifierWithheld;
     }
 
     /** Current price (the sale price when there is one). */

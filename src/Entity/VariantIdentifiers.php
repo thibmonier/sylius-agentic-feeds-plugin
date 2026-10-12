@@ -8,6 +8,9 @@ use Sylius\Component\Core\Model\ProductVariantInterface;
 
 class VariantIdentifiers implements VariantIdentifiersInterface
 {
+    /** Column length (Google: 70 characters at most). */
+    public const MPN_MAX_LENGTH = 70;
+
     protected ?int $id = null;
 
     protected ?ProductVariantInterface $variant = null;

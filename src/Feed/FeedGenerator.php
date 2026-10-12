@@ -98,7 +98,9 @@ final class FeedGenerator
                     if ($item->textCleaned) {
                         $issues[] = Issue::warning(Issue::INVALID_CHARACTERS, 'description');
                     }
-                    if (!$item->taxIncluded && !\in_array($context->countryCode, FeedItem::TAX_EXCLUSIVE_COUNTRIES, true)) {
+                    if ($item->taxUnknown) {
+                        $issues[] = Issue::warning(Issue::TAX_UNKNOWN, 'price');
+                    } elseif (!$item->taxIncluded && !\in_array($context->countryCode, FeedItem::TAX_EXCLUSIVE_COUNTRIES, true)) {
                         $issues[] = Issue::warning(Issue::PRICE_EXCLUDES_TAX, 'price');
                     }
                     foreach ($issues as $issue) {

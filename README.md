@@ -141,10 +141,15 @@ import them:
 bin/console tmonier:feeds:import-identifiers identifiers.csv --dry-run   # variant_code;gtin;mpn
 ```
 
+Every line is checked first (known variant, listed once, at most 3 values, valid GTIN not
+repeated in the file, MPN of 70 characters at most); with one rejected line, the errors are
+listed with their line numbers and nothing is written.
+
 The `gtin` / `mpn` product attributes are used for products without variants only; on products
 with variants they are not repeated (warning). Invalid GTINs (length, check digit, reserved
 prefixes 02, 04, 2, 05, 98, 99) and a GTIN already used by another item are left out and
-reported; without GTIN nor MPN, Google items get `identifier_exists: no`.
+reported; Google items get `identifier_exists: no` only when the variant has no identifier at
+all (the attribute is omitted when a GTIN was left out or not repeated on variants).
 
 **Prices and taxes.** Feed prices are the prices your shop displays (the channel prices, which
 include the tax when the rate of the channel default tax zone is "included in price"),
@@ -152,13 +157,14 @@ converted to the feed currency with the Sylius exchange rates. A feed in a curre
 exchange rate is refused in the form and fails (previous files kept) rather than publish
 unconverted amounts. Feeds targeting the US or Canada get prices without tax (an included tax is
 removed), as Google requires there. Elsewhere Google requires prices with VAT: a shop whose
-rates are not included in prices gets a `price_excludes_tax` warning per item. The Stripe
+rates are not included in prices gets a `price_excludes_tax` warning per item. A channel without
+default tax zone gets a `tax_unknown` warning and its prices are sent as excluding tax. The Stripe
 `tax_behavior` column says which (`inclusive` / `exclusive`).
 
 **Shipping.** Google: set shipping in the Merchant Center account (recommended by Google).
 Stripe requires a `shipping` value for physical goods: enter the shipping entries of the feed
 (one per line, `country:delivery_area:service:speed_range:price`, e.g.
-`FR:ALL:Standard:2-4:9.90 EUR`); they are required for Stripe feeds and sent for variants
+`FR:ALL:Standard:2-4:9.90 EUR`, or `US:ALL:Standard::5.00 USD` without speed range); they are required for Stripe feeds and sent for variants
 that require shipping.
 
 **Sales (Omnibus).** A product shows a reduced price only when a catalog promotion applies to

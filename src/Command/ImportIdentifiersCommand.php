@@ -14,6 +14,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Tmonier\SyliusAgenticFeedsPlugin\Entity\VariantIdentifiers;
 use Tmonier\SyliusAgenticFeedsPlugin\Form\VariantIdentifiersManager;
 use Tmonier\SyliusAgenticFeedsPlugin\Validation\Gtin;
 
@@ -61,12 +62,19 @@ final class ImportIdentifiersCommand extends Command
         $errors = [];
         $lines = [];
         $seen = [];
+        $seenVariants = [];
         foreach ($rows as $offset => $row) {
             if ('' === trim($row)) {
                 continue;
             }
-            $values = array_combine($columns, array_pad(str_getcsv($row, $delimiter, '"', ''), \count($columns), ''));
             $number = $offset + 2;
+            $cells = str_getcsv($row, $delimiter, '"', '');
+            if (\count($cells) > \count($columns)) {
+                $errors[$number] = sprintf('Too many values (%d, %d columns).', \count($cells), \count($columns));
+
+                continue;
+            }
+            $values = array_combine($columns, array_pad($cells, \count($columns), ''));
             $variant = $this->variantRepository->findOneBy(['code' => trim((string) $values['variant_code'])]);
             $gtin = trim((string) ($values['gtin'] ?? ''));
             $mpn = trim((string) ($values['mpn'] ?? ''));
@@ -75,8 +83,17 @@ final class ImportIdentifiersCommand extends Command
 
                 continue;
             }
+            $code = (string) $variant->getCode();
             $normalized = '' === $gtin ? null : Gtin::normalize($gtin);
-            if ('' !== $gtin && null === $normalized) {
+            if (isset($seenVariants[$code])) {
+                $errors[$number] = sprintf('Variant "%s" already on line %d.', $code, $seenVariants[$code]);
+
+                continue;
+            }
+            $seenVariants[$code] = $number;
+            if (mb_strlen($mpn) > VariantIdentifiers::MPN_MAX_LENGTH) {
+                $errors[$number] = sprintf('MPN longer than %d characters.', VariantIdentifiers::MPN_MAX_LENGTH);
+            } elseif ('' !== $gtin && null === $normalized) {
                 $errors[$number] = sprintf('Invalid GTIN "%s".', $gtin);
             } elseif (null !== $normalized && isset($seen[$normalized])) {
                 $errors[$number] = sprintf('GTIN "%s" already on line %d.', $gtin, $seen[$normalized]);

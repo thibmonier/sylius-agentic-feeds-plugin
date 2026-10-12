@@ -52,6 +52,7 @@ tmonier_agentic_feeds:
         no_identifiers: 'No GTIN nor MPN: sent with identifier_exists = no where the format has it.'
         no_sale_end_date: 'The catalog promotion has no end date: the reduced price is sent as the price, without sale price.'
         price_excludes_tax: 'The price excludes tax (as the shop displays it); Google requires prices with VAT outside the US and Canada.'
+        tax_unknown: 'The channel has no default tax zone: whether the price includes tax is unknown, it is sent as excluding tax. Set a default tax zone on the channel.'
         invalid_characters: 'Control characters invalid in XML were removed from the texts.'
         shared_identifier: 'The product GTIN/MPN attribute is not repeated on its variants: enter one GTIN per variant (variant form or tmonier:feeds:import-identifiers).'
         duplicate_gtin: 'GTIN %gtin% already used by %item%: left out of this item.'

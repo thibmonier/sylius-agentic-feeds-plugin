@@ -150,6 +150,22 @@ final class FeedGeneratorTest extends KernelTestCase
         self::assertSame(['25.00 EUR', 'exclusive'], [$this->stripeRow((string) $us->getCode())['price'], $this->stripeRow((string) $us->getCode())['tax_behavior']]);
     }
 
+    public function testWithoutDefaultTaxZoneThePriceIsNotClaimedToIncludeTax(): void
+    {
+        $net = $this->catalog->product('NOZONE', [2500]);
+        $this->catalog->image($net, 'a/nozone.jpg');
+        $this->catalog->tax($this->catalog->variant($net), 0.2);
+        $this->catalog->channel()->setDefaultTaxZone(null);
+        $this->entityManager()->flush();
+        $feed = $this->catalog->feed(StripeCsvFormat::CODE);
+
+        $result = $this->generate($feed);
+
+        $row = $this->stripeRow((string) $feed->getCode());
+        self::assertSame(['25.00 EUR', 'exclusive'], [$row['price'], $row['tax_behavior']], 'Unknown tax: never sent as tax included.');
+        self::assertContains('tax_unknown', array_map(static fn (array $issue): string => $issue[0]->code, $result->issues()));
+    }
+
     public function testIncludedTaxIsRemovedForUsFeeds(): void
     {
         $gross = $this->catalog->product('GROSS', [3000]);

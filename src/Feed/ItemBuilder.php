@@ -105,6 +105,7 @@ final class ItemBuilder
             $title[1] || $description[1],
             $variant->isShippingRequired(),
             $sharedIgnored,
+            null === $context->channel->getDefaultTaxZone(),
         );
     }
 
@@ -205,7 +206,11 @@ final class ItemBuilder
     private function tax(ProductVariantInterface $variant, FeedContext $context): array
     {
         $zone = $context->channel->getDefaultTaxZone();
-        $rate = null === $zone ? null : $this->taxRateResolver->resolve($variant, ['zone' => $zone]);
+        if (null === $zone) {
+            // Unknown: reported (tax_unknown) and treated as excluded (never claim an included tax).
+            return [false, null];
+        }
+        $rate = $this->taxRateResolver->resolve($variant, ['zone' => $zone]);
         if (\in_array($context->countryCode, FeedItem::TAX_EXCLUSIVE_COUNTRIES, true)) {
             return [false, $rate];
         }

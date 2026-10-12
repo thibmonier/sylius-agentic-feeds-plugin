@@ -11,6 +11,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Callback;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
+use Tmonier\SyliusAgenticFeedsPlugin\Entity\VariantIdentifiers;
 use Tmonier\SyliusAgenticFeedsPlugin\Validation\Gtin;
 
 /** GTIN and MPN of a variant (unmapped field of the variant form). */
@@ -32,7 +33,7 @@ final class VariantIdentifiersType extends AbstractType
             ->add('mpn', TextType::class, [
                 'label' => 'tmonier_agentic_feeds.form.mpn',
                 'required' => false,
-                'constraints' => [new Length(max: 70, groups: ['sylius'])],
+                'constraints' => [new Length(max: VariantIdentifiers::MPN_MAX_LENGTH, groups: ['sylius'])],
             ])
         ;
     }

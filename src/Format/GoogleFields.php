@@ -49,7 +49,7 @@ final class GoogleFields
             'brand' => (string) $item->brand,
             'gtin' => (string) $gtin,
             'mpn' => (string) $item->mpn,
-            'identifier_exists' => null === $gtin && null === $item->mpn ? 'no' : '',
+            'identifier_exists' => $item->hasNoIdentifier() ? 'no' : '',
             'condition' => $item->condition,
             'item_group_id' => $item->hasVariants ? $item->itemGroupId : '',
             'product_type' => (string) $item->productType,

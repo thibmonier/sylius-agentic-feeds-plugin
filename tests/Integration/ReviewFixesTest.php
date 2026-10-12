@@ -13,6 +13,7 @@ use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Component\HttpKernel\KernelInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Tests\Tmonier\SyliusAgenticFeedsPlugin\AgenticFeedsTestTrait;
 use Tmonier\SyliusAgenticFeedsPlugin\Entity\FeedIssueInterface;
 use Tmonier\SyliusAgenticFeedsPlugin\Entity\ProductFeedInterface;
@@ -25,6 +26,7 @@ use Tmonier\SyliusAgenticFeedsPlugin\Format\FeedFormatInterface;
 use Tmonier\SyliusAgenticFeedsPlugin\Format\FeedWriterInterface;
 use Tmonier\SyliusAgenticFeedsPlugin\Format\FormatRegistry;
 use Tmonier\SyliusAgenticFeedsPlugin\Format\GoogleXmlFormat;
+use Tmonier\SyliusAgenticFeedsPlugin\Format\StripeCsvFormat;
 use Tmonier\SyliusAgenticFeedsPlugin\Repository\FeedIssueRepositoryInterface;
 use Tmonier\SyliusAgenticFeedsPlugin\Storage\FeedStorageInterface;
 
@@ -192,6 +194,27 @@ final class ReviewFixesTest extends KernelTestCase
         self::assertStringContainsString('is disabled', (string) $result->failure());
     }
 
+    public function testTheShippingSpeedRangeIsOptional(): void
+    {
+        $feed = $this->catalog->feed(StripeCsvFormat::CODE);
+        $validator = self::getContainer()->get('validator');
+        self::assertInstanceOf(ValidatorInterface::class, $validator);
+        $messages = static function () use ($feed, $validator): array {
+            $messages = [];
+            foreach ($validator->validate($feed, null, ['sylius']) as $violation) {
+                $messages[] = $violation->getPropertyPath() . ': ' . $violation->getMessage();
+            }
+
+            return $messages;
+        };
+
+        $feed->setShippingRulesText("FR:ALL:Standard:2-4:9.90 EUR\nUS:ALL:Standard::5.00 USD");
+        self::assertSame([], $messages());
+
+        $feed->setShippingRulesText('US:ALL:Standard:5.00 USD');
+        self::assertCount(1, $messages(), 'The speed range separator stays required.');
+    }
+
     public function testTheIdentifiersImport(): void
     {
         $product = $this->catalog->product('IMPORT', [1000, 1000]);
@@ -206,6 +229,12 @@ final class ReviewFixesTest extends KernelTestCase
             file_put_contents($file, sprintf("variant_code;gtin;mpn\n%s;4006381333931;M-1\n%s;4006381333931;M-2\n", $codes[0], $codes[1]));
             self::assertSame(1, $tester->execute(['file' => $file]));
             self::assertStringContainsString('already on line 2', $tester->getDisplay());
+
+            file_put_contents($file, sprintf("variant_code;gtin;mpn\n%s;;M-1;extra\n%s;;%s\n%s;;M-3\n", $codes[0], $codes[1], str_repeat('M', 71), $codes[1]));
+            self::assertSame(1, $tester->execute(['file' => $file]));
+            self::assertStringContainsString('Line 2: Too many values', $tester->getDisplay());
+            self::assertStringContainsString('Line 3: MPN longer than 70 characters', $tester->getDisplay());
+            self::assertStringContainsString('Line 4: Variant "' . $codes[1] . '" already on line 3', $tester->getDisplay());
 
             file_put_contents($file, sprintf("variant_code;gtin;mpn\n%s;400-6381 333931;M-1\n%s;;M-2\n", $codes[0], $codes[1]));
             self::assertSame(0, $tester->execute(['file' => $file]));

@@ -27,6 +27,8 @@ final class Issue
 
     public const PRICE_EXCLUDES_TAX = 'price_excludes_tax';
 
+    public const TAX_UNKNOWN = 'tax_unknown';
+
     public const SHARED_IDENTIFIER = 'shared_identifier';
 
     public const DUPLICATE_GTIN = 'duplicate_gtin';

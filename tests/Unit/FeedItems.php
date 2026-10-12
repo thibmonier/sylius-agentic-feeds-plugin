@@ -45,6 +45,7 @@ final class FeedItems
         array $options = ['Couleur' => 'Rouge', 'Taille' => 'M'],
         bool $hasVariants = true,
         bool $shippingRequired = true,
+        bool $sharedIdentifierIgnored = false,
     ): FeedItem {
         return new FeedItem(
             $id,
@@ -77,6 +78,7 @@ final class FeedItems
             true,
             false,
             $shippingRequired,
+            $sharedIdentifierIgnored,
         );
     }
 

@@ -42,6 +42,24 @@ final class FormatsTest extends TestCase
         self::assertCount(0, $g->sale_price);
     }
 
+    public function testIdentifierExistsIsNoOnlyWithoutAnyIdentifier(): void
+    {
+        $xml = new \SimpleXMLElement($this->write(new GoogleXmlFormat(), [
+            FeedItems::item(id: 'NONE', gtin: null, mpn: null),
+            FeedItems::item(id: 'SHARED', gtin: null, mpn: null, sharedIdentifierIgnored: true),
+            FeedItems::item(id: 'DUPLICATE')->withoutGtin(),
+            FeedItems::item(id: 'INVALID', gtin: '1234'),
+        ])['main']);
+        $values = [];
+        foreach ($xml->channel->item as $item) {
+            $g = $item->children('http://base.google.com/ns/1.0');
+            $values[(string) $g->id] = (string) $g->identifier_exists;
+        }
+
+        // Google answer/6324478: "no" only when the product has no GTIN at all; otherwise omitted.
+        self::assertSame(['NONE' => 'no', 'SHARED' => '', 'DUPLICATE' => '', 'INVALID' => ''], $values);
+    }
+
     public function testGoogleTsv(): void
     {
         $lines = explode("\n", rtrim($this->write(new GoogleTsvFormat(), [FeedItems::item(description: "Ligne 1\tTab\nLigne 2")])['main'], "\n"));

@@ -94,7 +94,7 @@ final class StripeCsvFormat implements FeedFormatInterface
     }
 
     /** One entry: country:delivery_area:service:speed_range:price, e.g. "FR:ALL:Standard:2-4:9.90 EUR". */
-    public const SHIPPING_ENTRY = '/^[A-Z]{2}:[^:,]+:[^:,]+:\d+-\d+:\d+(\.\d{1,2})? [A-Z]{3}$/';
+    public const SHIPPING_ENTRY = '/^[A-Z]{2}:[^:,]+:[^:,]+:(\d+-\d+)?:\d+(\.\d{1,2})? [A-Z]{3}$/';
 
     /** Stripe requires "shipping" for physical goods: the feed needs shipping entries. */
     public function validateFeed(FeedContext $context): array

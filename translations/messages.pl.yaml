@@ -52,6 +52,7 @@ tmonier_agentic_feeds:
         no_identifiers: 'Brak GTIN i MPN: wysyłane z identifier_exists = no, jeśli format to przewiduje.'
         no_sale_end_date: 'Promocja katalogowa nie ma daty zakończenia: obniżona cena jest wysyłana jako cena, bez ceny promocyjnej.'
         price_excludes_tax: 'Cena jest bez podatku (tak jak pokazuje sklep); Google wymaga cen z VAT poza USA i Kanadą.'
+        tax_unknown: 'Kanał nie ma domyślnej strefy podatkowej: nie wiadomo, czy cena zawiera podatek, jest wysyłana bez podatku. Ustaw domyślną strefę podatkową kanału.'
         invalid_characters: 'Z tekstów usunięto znaki sterujące niedozwolone w XML.'
         shared_identifier: 'GTIN/MPN z atrybutu produktu nie jest powtarzany w wariantach: podaj GTIN dla każdego wariantu (formularz wariantu lub tmonier:feeds:import-identifiers).'
         duplicate_gtin: 'GTIN %gtin% jest już używany przez %item%: pominięty w tej pozycji.'

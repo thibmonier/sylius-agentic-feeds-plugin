@@ -52,6 +52,7 @@ tmonier_agentic_feeds:
         no_identifiers: 'Geen GTIN of MPN: verzonden met identifier_exists = no als het formaat dit ondersteunt.'
         no_sale_end_date: 'De catalogusactie heeft geen einddatum: de verlaagde prijs wordt als prijs verzonden, zonder aanbiedingsprijs.'
         price_excludes_tax: 'De prijs is exclusief belasting (zoals de winkel hem toont); Google vereist prijzen inclusief btw buiten de VS en Canada.'
+        tax_unknown: 'Het kanaal heeft geen standaard belastingzone: onbekend of de prijs belasting bevat, hij wordt exclusief belasting verzonden. Stel een standaard belastingzone in voor het kanaal.'
         invalid_characters: 'In XML ongeldige stuurtekens zijn uit de teksten verwijderd.'
         shared_identifier: 'De GTIN/MPN van het productkenmerk wordt niet herhaald op de varianten: voer per variant een GTIN in (variantformulier of tmonier:feeds:import-identifiers).'
         duplicate_gtin: 'GTIN %gtin% wordt al gebruikt door %item%: weggelaten bij dit artikel.'
