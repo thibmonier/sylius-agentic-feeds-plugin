@@ -44,16 +44,18 @@ control.
   `seller_url`, `image_url`, `additional_image_urls` (array), `availability`, `price`,
   `sale_price` (only below `price`; the format has no sale dates, so the file says the truth
   while the promotion runs), `condition`, `product_category`, `gtin`, `mpn`, `color`, `size`,
-  `weight` + `item_weight_unit: kg`, `is_eligible_search: true`, `is_eligible_checkout: false`,
-  `return_policy`, `return_deadline_in_days`, `seller_privacy_policy`, `seller_tos` (from
-  `seller_policies`), `target_countries` (feed country), and for variants `group_id`
+  `weight` (decimal string) + `item_weight_unit: kg`, `is_eligible_search: true`,
+  `is_eligible_checkout: false`, `return_policy`, `accepts_returns: true` with
+  `return_deadline_in_days`, `seller_privacy_policy`, `seller_tos` (from `seller_policies`),
+  `target_countries` (feed country when US, CA or MX; warning otherwise), and for variants `group_id`
   (must differ from `item_id`), `listing_has_variations: true`, `variant_dict`.
 - **Stripe** (CSV with header, comma, RFC 4180 quoting): product file `id` (max 100), `title`,
   `description`, `link`, `image_link`, `additional_image_link` (comma-separated, commas in URLs
   encoded `%2C`), `availability`, `inventory_quantity`, `inventory_not_tracked`, `price`,
   `sale_price`, `sale_price_effective_date` (`YYYY-MM-DD/YYYY-MM-DD`), `tax_behavior`
   (`inclusive`: prices include VAT), `brand`, `gtin`, `mpn`, `condition`, `product_category`,
-  `item_group_id` (max 70), `color`, `size` (max 20), `weight` (`0.25 kg`); inventory file
+  `item_group_id` (max 70), `color`, `size` (max 20), `weight` (`0.25 kg`), `shipping` (the
+  feed's shipping entries, required for Stripe feeds, physical goods only); inventory file
   `id, availability, inventory_quantity` (tracked variants only: the quantity is required
   there); pricing file `id, price, sale_price, sale_price_effective_date`.
 
@@ -72,9 +74,12 @@ control.
   the channel (no channel price: error `missing_price`). `Format/*` map it to the target
   fields; `Validation/ItemValidator` + the format checks give `Issue`s: errors leave the item
   out, warnings do not.
-- **Prices (decision, Omnibus)**: current channel price converted to the feed currency
-  (`CurrencyConverter`), plus the tax of the channel default tax zone when the rate is not
-  included. A sale only when a catalog promotion is applied to the channel price and
+- **Prices (decision, Omnibus and display)**: the price the shop displays (channel price),
+  converted to the feed currency (`CurrencyConverter`; a missing exchange rate fails the
+  generation and is refused in the form). US/CA feeds: tax removed when included (Google "Don't
+  include any taxes", answer 6324371). Elsewhere a price without tax (rates not included) is
+  kept as displayed with a `price_excludes_tax` warning; `taxIncluded` drives the Stripe
+  `tax_behavior`. A sale only when a catalog promotion is applied to the channel price and
   `ProductVariantPricesCalculator::calculateLowestPriceBeforeDiscount()` returns a higher price
   (the channel shows lowest prices and Sylius knows the 30-day lowest): price = that lowest
   price, sale price = current price, dates from the promotions (latest start, earliest end).
@@ -84,8 +89,11 @@ control.
   titles `product name - options` for products with several enabled variants.
 - **Links**: `https://<channel hostname>/<locale>/products/<slug>` + `link_parameters`
   (`{format}` placeholder); images `https://<hostname>/media/image/<path>`, variant images first.
-- **Identifiers**: product attributes (configurable codes), default brand; `Validation/Gtin`
-  (8/12/13/14 digits, GS1 check digit, reserved prefixes).
+- **Identifiers**: GTIN/MPN per variant in the plugin table `tmonier_agentic_variant_identifiers`
+  (variant form, `tmonier:feeds:import-identifiers`); product attributes only for products
+  without variants (warning `shared_identifier` otherwise); a GTIN already used in the feed is
+  dropped (`duplicate_gtin`); `Validation/Gtin` (8/12/13/14 digits, GS1 check digit, reserved
+  prefixes). Texts: characters invalid in XML 1.0 removed (`invalid_characters`).
 - `Feed/FeedGenerator`: variant ids queried once, variants loaded in batches, entity manager
   cleared between batches, files written to temporary streams then to the storage (atomic
   rename for the local storage); failures keep the previous files and record the message.
@@ -96,7 +104,9 @@ control.
 
 - `EventListener/CatalogChangeListener` (onFlush/postFlush): products, variants (stock),
   channel prices, translations, images, attribute values changed → enabled feeds marked stale
-  (first date kept). `tmonier:feeds:generate --stale` and `GenerateStaleFeeds` regenerate only
+  (date of the last change). A generation clears it only when the last change is older than
+  its start: a change made during a generation keeps the feed stale.
+  `tmonier:feeds:generate --stale` and `GenerateStaleFeeds` regenerate only
   those (decision: full regeneration of stale feeds rather than partial files, except the
   lightweight Stripe inventory/pricing files written with every Stripe generation).
 - Scheduling: cron, or Symfony Scheduler when installed (`schedule.enabled`).
@@ -106,7 +116,7 @@ control.
 ## 6. Serving
 
 `GET /feeds/{code}/{role}` (`role` = `main`, `inventory`, `pricing`): disabled, unknown, not
-generated feeds and wrong tokens answer 404 (decision: no hint that a protected feed exists);
+generated feeds, feeds of disabled channels (also not generated) and wrong tokens answer 404 (decision: no hint that a protected feed exists);
 `Last-Modified` and 304; `Cache-Control: public` (private with a token); `X-Robots-Tag:
 noindex`. Storage: local directory (default `var/agentic_feeds`) or a Flysystem operator.
 
@@ -132,8 +142,8 @@ severity, breadcrumb with the feed name, menu *Marketing > Product feeds*.
 2. Invalid GTINs are dropped from the files (warning) rather than leaving the item out.
 3. `is_eligible_checkout: false` always: checkout stays on the shop.
 4. No sale price without the Sylius 30-day reference price; Stripe needs an end date.
-5. Prices with the tax of the channel default tax zone (EU display); no shipping or tax
-   attributes (account settings).
+5. Prices as displayed by the shop (US/CA without tax); Google shipping/tax left to the
+   Merchant Center account; Stripe shipping from per-feed entries.
 6. Protected feeds answer 404, like missing ones.
 7. Stale feeds are regenerated in full.
 8. OpenAI and Stripe files are not uploaded (approval or account needed to test, memo §5.1).

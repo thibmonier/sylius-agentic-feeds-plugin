@@ -20,16 +20,16 @@ does not guarantee that your products appear anywhere. See [What to expect](#wha
 |---|---|
 | Google Merchant Center | RSS 2.0 XML with the `g:` namespace, or a tab-separated file: ids, titles, plain-text descriptions, links, images, availability, price, sale price and dates, brand, GTIN, MPN, `identifier_exists`, condition, `item_group_id`, `product_type`, colour, size, shipping weight. |
 | OpenAI product feed | JSON Lines compressed with gzip, OpenAI field names (`item_id`, `url`, `image_url`, `group_id`, `variant_dict`, `seller_name`...), `is_eligible_search: true`, `is_eligible_checkout: false` (buyers check out on your shop), optional return policy and seller URLs per channel. |
-| Stripe Agentic Commerce | Product catalog CSV, plus the inventory and pricing CSVs Stripe accepts every 15 minutes. |
+| Stripe Agentic Commerce | Product catalog CSV with the shipping entries of the feed, plus the inventory and pricing CSVs Stripe accepts every 15 minutes. |
 | One feed per market | Channel, locale, currency (converted with the Sylius exchange rates) and target country per feed; as many feeds as you need. |
-| Correct prices | Prices include the VAT of the channel default tax zone. A sale price only when a catalog promotion applies **and** Sylius knows the lowest price of the 30 days before it (EU Omnibus): never a struck-through "original price" set by hand. |
+| Correct prices | The prices your shop displays, in the feed currency (a feed fails rather than publish unconverted amounts without exchange rate); without tax in US and Canada feeds. A sale price only when a catalog promotion applies **and** Sylius knows the lowest price of the 30 days before it (EU Omnibus): never a struck-through "original price" set by hand. |
 | Variants | One item per enabled variant, grouped by product (`item_group_id` / `group_id`), options as colour, size or variant attributes. |
-| Identifiers | GTIN, MPN and brand from configurable product attributes, with a default brand; GTIN check digit and reserved prefixes verified. |
+| Identifiers | GTIN and MPN per variant (variant form, `tmonier:feeds:import-identifiers`), product attributes for products without variants, brand attribute or default brand; check digit and reserved prefixes verified, a GTIN never repeated on two items. |
 | Stock | `in_stock` / `out_of_stock` from on hand minus on hold (tracked variants), quantities in the Stripe files. |
 | Validation | Per item: missing required fields, too long titles and descriptions, invalid GTINs, missing identifiers. Items with errors are left out and listed; admin report per feed; exit code for CI. |
 | Freshness | A catalog change (product, variant, stock, price, translation, image, attribute) marks the feeds stale: `tmonier:feeds:generate --stale` (cron) or Symfony Scheduler regenerates only those. |
 | Deltas | With [tmonier/sylius-webhook-outbox-plugin](https://github.com/thibmonier/sylius-webhook-outbox-plugin): `product_variant.price_changed` events (stock changes are its `product_variant.stock_changed`). |
-| Serving | Stable URLs `/feeds/{code}` (and `/feeds/{code}/inventory`, `/feeds/{code}/pricing`), optional access token, `Last-Modified` / 304, files in a local directory or any Flysystem storage. |
+| Serving | Stable URLs `/feeds/{code}` (and `/feeds/{code}/inventory`, `/feeds/{code}/pricing`), optional access token (`X-Feed-Token` header), `Last-Modified` / 304, files in a local directory or any Flysystem storage; feeds of disabled channels are neither generated nor served. |
 | Product pages | schema.org `Product` with one `Offer` per variant (JSON-LD), left out when the page already has a Product JSON-LD. |
 | Admin | *Marketing > Product feeds*: configurations, last generation status and counts, download links, "Generate now", issues per feed. |
 
@@ -133,14 +133,33 @@ tmonier_sylius_agentic_feeds:
 
 **Brand and identifiers.** Google, OpenAI and Stripe require a brand for most products. Use a
 text product attribute `brand` (or set `default_brand`, e.g. for your own label); without a
-brand, items are left out and reported. GTINs come from a text attribute `gtin`: invalid ones
-(length, check digit, reserved prefixes 02, 04, 2, 05, 98, 99) are left out of the files and
+brand, items are left out and reported. Each variant has its own GTIN (Google: "each variant has
+its own GTIN"): enter GTIN and MPN on the variant form (the product form of simple products), or
+import them:
+
+```bash
+bin/console tmonier:feeds:import-identifiers identifiers.csv --dry-run   # variant_code;gtin;mpn
+```
+
+The `gtin` / `mpn` product attributes are used for products without variants only; on products
+with variants they are not repeated (warning). Invalid GTINs (length, check digit, reserved
+prefixes 02, 04, 2, 05, 98, 99) and a GTIN already used by another item are left out and
 reported; without GTIN nor MPN, Google items get `identifier_exists: no`.
 
-**Prices and taxes.** Feed prices are the channel prices converted to the feed currency, with
-the tax of the channel default tax zone added when the rate is not included in the price (VAT
-display in Europe; US merchants should keep prices without tax). Shipping is not sent: set it
-in Merchant Center (recommended by Google) and in your Stripe profile.
+**Prices and taxes.** Feed prices are the prices your shop displays (the channel prices, which
+include the tax when the rate of the channel default tax zone is "included in price"),
+converted to the feed currency with the Sylius exchange rates. A feed in a currency without
+exchange rate is refused in the form and fails (previous files kept) rather than publish
+unconverted amounts. Feeds targeting the US or Canada get prices without tax (an included tax is
+removed), as Google requires there. Elsewhere Google requires prices with VAT: a shop whose
+rates are not included in prices gets a `price_excludes_tax` warning per item. The Stripe
+`tax_behavior` column says which (`inclusive` / `exclusive`).
+
+**Shipping.** Google: set shipping in the Merchant Center account (recommended by Google).
+Stripe requires a `shipping` value for physical goods: enter the shipping entries of the feed
+(one per line, `country:delivery_area:service:speed_range:price`, e.g.
+`FR:ALL:Standard:2-4:9.90 EUR`); they are required for Stripe feeds and sent for variants
+that require shipping.
 
 **Sales (Omnibus).** A product shows a reduced price only when a catalog promotion applies to
 it and the channel shows the lowest price before discounts (Sylius price history): the feed
@@ -172,7 +191,8 @@ tmonier_sylius_agentic_feeds:
 | Channel, locale, currency | the locale and currency must be enabled in the channel |
 | Target country | optional (OpenAI `target_countries`) |
 | Format | `google_xml`, `google_tsv`, `openai_jsonl`, `stripe_csv` |
-| Access token | optional, 16+ characters: then `?token=...` or the `X-Feed-Token` header is required (404 otherwise) |
+| Access token | optional, 16+ characters: then the `X-Feed-Token` header (recommended) or `?token=...` is required (404 otherwise). Query strings end up in web server, proxy and CDN logs: prefer the header when the consumer supports it, and rotate the token if it leaked |
+| Shipping entries | Stripe feeds: one `country:delivery_area:service:speed_range:price` per line |
 
 Files: `{code}.xml`, `{code}.tsv`, `{code}.jsonl.gz`, `{code}.csv`, `{code}-inventory.csv`,
 `{code}-pricing.csv`. A failed generation keeps the previous files.
@@ -231,7 +251,8 @@ download links, feed form, issues report, generated XML.
 
 - Files are generated, not pushed: no SFTP upload to OpenAI, no Stripe import API call.
 - No parquet (OpenAI's preferred format), no OpenAI Feed API push, no promotion feed.
-- Shipping and tax attributes are not sent (account settings of Merchant Center and Stripe).
+- Google shipping and tax attributes are not sent (Merchant Center account settings).
+- OpenAI: `target_countries` only for the US, CA and MX (the markets of the format).
 - One item per variant; variant images are listed first, then the product images.
 - Image URLs point to the original files (`/media/image/...`); Google requires 500 x 500
   pixels at least from 2027-01-31.

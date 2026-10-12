@@ -5,6 +5,8 @@ All notable changes to `tmonier/sylius-agentic-feeds-plugin`.
 ## 1.0.0
 
 First release:
+- feed prices are the displayed prices (US/CA without tax), no feed without exchange rate,
+  per-variant GTIN/MPN (variant form, import command), Stripe shipping entries per feed;
 - product feeds per channel, locale, currency and target country: Google Merchant Center (XML,
   TSV), OpenAI product feed (JSON Lines, gzip), Stripe Agentic Commerce catalog (product,
   inventory and pricing CSV);
