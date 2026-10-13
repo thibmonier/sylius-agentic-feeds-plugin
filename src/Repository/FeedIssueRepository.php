@@ -21,11 +21,11 @@ class FeedIssueRepository extends EntityRepository implements FeedIssueRepositor
         ;
     }
 
-    public function createByFeedQueryBuilder(string $feedId): QueryBuilder
+    public function createListQueryBuilder(): QueryBuilder
     {
         return $this->createQueryBuilder('o')
-            ->andWhere('IDENTITY(o.feed) = :feedId')
-            ->setParameter('feedId', $feedId)
+            ->addSelect('feed')
+            ->innerJoin('o.feed', 'feed')
         ;
     }
 }

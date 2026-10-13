@@ -15,5 +15,6 @@ interface FeedIssueRepositoryInterface extends RepositoryInterface
     public function deleteByFeed(ProductFeedInterface $feed): void;
 
     /** Admin grid of the issues of one feed. */
-    public function createByFeedQueryBuilder(string $feedId): QueryBuilder;
+    /** Admin grid: issues with their feed (one query per page). */
+    public function createListQueryBuilder(): QueryBuilder;
 }

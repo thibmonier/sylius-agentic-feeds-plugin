@@ -83,6 +83,8 @@ sylius_grid:
                 name: doctrine/orm
                 options:
                     class: "%tmonier_agentic_feeds.model.feed_issue.class%"
+                    repository:
+                        method: createListQueryBuilder
             sorting:
                 severity: asc
             limits: [50, 100, 250]
@@ -94,6 +96,11 @@ sylius_grid:
                     path: .
                     options:
                         template: "@TmonierSyliusAgenticFeedsPlugin/admin/feed_issue/grid/field/severity.html.twig"
+                feed:
+                    type: string
+                    label: tmonier_agentic_feeds.ui.feed
+                    path: feed.name
+                    sortable: feed.name
                 itemId:
                     type: string
                     label: tmonier_agentic_feeds.ui.item

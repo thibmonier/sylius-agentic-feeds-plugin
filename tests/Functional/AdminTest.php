@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Tmonier\SyliusAgenticFeedsPlugin\Functional;
 
+use Doctrine\Bundle\DoctrineBundle\DataCollector\DoctrineDataCollector;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\HttpKernel\Profiler\Profile;
 use Tmonier\SyliusAgenticFeedsPlugin\Entity\ProductFeedInterface;
 use Tmonier\SyliusAgenticFeedsPlugin\Format\GoogleXmlFormat;
+use Tmonier\SyliusAgenticFeedsPlugin\Format\OpenAiJsonlFormat;
 
 final class AdminTest extends WebTestCase
 {
@@ -132,6 +135,91 @@ final class AdminTest extends WebTestCase
         $identifiers = $this->entityManager()->getRepository(\Tmonier\SyliusAgenticFeedsPlugin\Entity\VariantIdentifiersInterface::class)->findOneBy(['variant' => $variant->getId()]);
         self::assertInstanceOf(\Tmonier\SyliusAgenticFeedsPlugin\Entity\VariantIdentifiersInterface::class, $identifiers);
         self::assertSame(['4006381333931', 'X-1'], [$identifiers->getGtin(), $identifiers->getMpn()]);
+    }
+
+    public function testNoUntranslatedKeyOnTheAdminPages(): void
+    {
+        $product = $this->catalog->product('KEYS', [1000, 1200]);
+        $variant = $this->catalog->variant($product);
+        $this->catalog->image($this->catalog->product('KEYSIMG', [1000]), 'a/keys.jpg');
+        $feed = $this->catalog->feed(GoogleXmlFormat::CODE);
+        $this->catalog->product('KEYSNOIMG', [1000]);
+        $this->generate($feed);
+        $this->loginAdmin();
+        [$feedId, $productId, $variantId] = [$feed->getId(), $product->getId(), $variant->getId()];
+        self::assertIsInt($feedId);
+        self::assertIsInt($productId);
+        self::assertIsInt($variantId);
+
+        $pages = [
+            '/admin/product-feeds/',
+            '/admin/product-feeds/new',
+            sprintf('/admin/product-feeds/%d/edit', $feedId),
+            sprintf('/admin/product-feeds/issues?criteria[feed]=%d', $feedId),
+            sprintf('/admin/products/%d/edit', $productId),
+            sprintf('/admin/products/%d/variants/%d/edit', $productId, $variantId),
+        ];
+        foreach ($pages as $page) {
+            $crawler = $this->client->request('GET', $page);
+            self::assertResponseIsSuccessful($page);
+            $raw = [];
+            preg_match_all('/tmonier_agentic_feeds\.[a-z_.]+/', $crawler->filter('title')->text() . ' ' . $crawler->filter('body')->text(), $raw);
+            self::assertSame([], array_values(array_unique($raw[0])), $page);
+        }
+        $crawler = $this->client->request('GET', sprintf('/admin/product-feeds/%d/edit', $feedId));
+        self::assertStringContainsString('Edit Product feed', $crawler->filter('body')->text());
+        $crawler = $this->client->request('GET', sprintf('/admin/product-feeds/issues?criteria[feed]=%d', $feedId));
+        self::assertStringContainsString('Feed issues', $crawler->filter('.breadcrumb')->text());
+    }
+
+    public function testTheIssuesGridShowsTheFeedWithoutOneQueryPerRow(): void
+    {
+        $this->catalog->product('NOIMG1', [1000]);
+        $this->catalog->product('NOIMG2', [1000]);
+        $google = $this->catalog->feed(GoogleXmlFormat::CODE);
+        $google->setName('Google issues');
+        $openAi = $this->catalog->feed(OpenAiJsonlFormat::CODE, null, 'EUR', 'US');
+        $openAi->setName('OpenAI issues');
+        $this->entityManager()->flush();
+        $this->generate($google);
+        $this->generate($openAi);
+        $this->entityManager()->clear();
+        $this->loginAdmin();
+
+        $this->client->enableProfiler();
+        $crawler = $this->client->request('GET', '/admin/product-feeds/issues?limit=250&criteria[search][value]=NOIMG');
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('Feed', $crawler->filter('table thead')->text());
+        self::assertStringContainsString('Google issues', $crawler->filter('table tbody')->text());
+        self::assertStringContainsString('OpenAI issues', $crawler->filter('table tbody')->text());
+
+        $profile = $this->client->getProfile();
+        self::assertInstanceOf(Profile::class, $profile);
+        $collector = $profile->getCollector('db');
+        self::assertInstanceOf(DoctrineDataCollector::class, $collector);
+        // The collector also holds the queries of the generations above: only those of the grid count.
+        $feedLoads = [];
+        $grid = false;
+        $joined = false;
+        foreach ($collector->getQueries() as $queries) {
+            self::assertIsArray($queries);
+            foreach ($queries as $query) {
+                self::assertIsArray($query);
+                $sql = $query['sql'] ?? null;
+                self::assertIsString($sql);
+                $grid = $grid || (str_starts_with($sql, 'SELECT') && str_contains($sql, 'tmonier_agentic_feed_issue'));
+                $joined = $joined || ($grid && str_contains($sql, 'INNER JOIN tmonier_agentic_feed '));
+                if ($grid && 1 === preg_match('/FROM tmonier_agentic_feed \w+ WHERE \w+\.id = \?/', $sql)) {
+                    $feedLoads[] = $sql;
+                }
+            }
+        }
+        self::assertTrue($joined, 'The grid query joins the feed (the filter choices may otherwise hide a query per row).');
+
+        $crawler = $this->client->request('GET', '/admin/product-feeds/issues?limit=250&criteria[search][value]=NOIMG&sorting[feed]=desc');
+        self::assertResponseIsSuccessful();
+        self::assertStringStartsWith('OpenAI issues', trim($crawler->filter('table tbody tr td')->eq(1)->text()));
+        self::assertSame([], $feedLoads, 'The feeds are joined, not loaded per row.');
     }
 
     private function csrfToken(): string

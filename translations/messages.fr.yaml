@@ -1,6 +1,8 @@
 tmonier_agentic_feeds:
     ui:
         product_feeds: 'Flux produits'
+        product_feed: 'Flux produits'
+        feed_issues: 'Problèmes des flux'
         target: 'Cible'
         last_generation: 'Dernière génération'
         files: 'Fichiers'

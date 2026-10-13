@@ -1,6 +1,8 @@
 tmonier_agentic_feeds:
     ui:
         product_feeds: 'Feedy produktowe'
+        product_feed: 'Feed produktowy'
+        feed_issues: 'Problemy feedów'
         target: 'Cel'
         last_generation: 'Ostatnie generowanie'
         files: 'Pliki'

@@ -1,6 +1,8 @@
 tmonier_agentic_feeds:
     ui:
         product_feeds: 'Product feeds'
+        product_feed: 'Product feed'
+        feed_issues: 'Feed issues'
         target: 'Target'
         last_generation: 'Last generation'
         files: 'Files'
