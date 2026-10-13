@@ -51,6 +51,14 @@ Messenger messages; demo fixtures; MySQL, MariaDB and PostgreSQL support.
 - **Google Merchant Center** fetches the feed URL on a schedule you set in Merchant Center.
 - Not "selling in ChatGPT / Gemini": that is not available to European merchants today.
 
+## Screenshots
+
+![Product feeds in Marketing: Google, OpenAI and Stripe feeds with their last generation and files](docs/images/admin-product-feeds.jpg)
+
+![Stripe feed form with its shipping rules](docs/images/admin-product-feed-stripe.jpg)
+
+![Issues found while generating the Stripe feed](docs/images/admin-product-feed-issues.jpg)
+
 ## Requirements
 
 | | Version |
