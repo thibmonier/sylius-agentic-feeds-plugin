@@ -17,7 +17,7 @@ final class FormatsTest extends TestCase
 {
     public function testGoogleXml(): void
     {
-        $xml = new \SimpleXMLElement($this->write(new GoogleXmlFormat(), [FeedItems::onSale(), FeedItems::item(id: 'MUG', hasVariants: false, gtin: null, mpn: null, availability: FeedItem::OUT_OF_STOCK)])['main']);
+        $xml = new \SimpleXMLElement($this->write(new GoogleXmlFormat(), [FeedItems::onSale(), FeedItems::item(id: 'MUG', availability: FeedItem::OUT_OF_STOCK, gtin: null, hasVariants: false)])['main']);
         $items = $xml->channel->item;
         self::assertCount(2, $items);
 
@@ -45,8 +45,8 @@ final class FormatsTest extends TestCase
     public function testIdentifierExistsIsNoOnlyWithoutAnyIdentifier(): void
     {
         $xml = new \SimpleXMLElement($this->write(new GoogleXmlFormat(), [
-            FeedItems::item(id: 'NONE', gtin: null, mpn: null),
-            FeedItems::item(id: 'SHARED', gtin: null, mpn: null, sharedIdentifierIgnored: true),
+            FeedItems::item(id: 'NONE', gtin: null),
+            FeedItems::item(id: 'SHARED', gtin: null, sharedIdentifierIgnored: true),
             FeedItems::item(id: 'DUPLICATE')->withoutGtin(),
             FeedItems::item(id: 'INVALID', gtin: '1234'),
         ])['main']);
@@ -75,7 +75,7 @@ final class FormatsTest extends TestCase
     public function testOpenAiJsonlIsGzippedAndUsesTheOpenAiNames(): void
     {
         $format = new OpenAiJsonlFormat(['WEB_FR' => ['return_policy' => 'https://shop.example.com/returns', 'privacy_policy' => null, 'terms' => null, 'return_days' => 30]]);
-        $gzip = $this->write($format, [FeedItems::onSale(), FeedItems::item(id: 'MUG', itemGroupId: 'MUG', hasVariants: false, gtin: '123')], 'openai_jsonl')['main'];
+        $gzip = $this->write($format, [FeedItems::onSale(), FeedItems::item(id: 'MUG', itemGroupId: 'MUG', gtin: '123', hasVariants: false)], 'openai_jsonl')['main'];
 
         self::assertSame("\x1f\x8b", substr($gzip, 0, 2));
         $lines = explode("\n", trim((string) gzdecode($gzip)));
@@ -159,7 +159,7 @@ final class FormatsTest extends TestCase
 
     public function testValidation(): void
     {
-        $issues = (new GoogleXmlFormat())->validate(FeedItems::item(id: str_repeat('x', 51), title: str_repeat('t', 151), brand: null, imageLink: null, gtin: '123', mpn: null, price: 0));
+        $issues = (new GoogleXmlFormat())->validate(FeedItems::item(id: str_repeat('x', 51), title: str_repeat('t', 151), imageLink: null, price: 0, gtin: '123', brand: null));
         $codes = array_map(static fn (Issue $issue): string => $issue->severity . ':' . $issue->code . ':' . $issue->field, $issues);
 
         self::assertEqualsCanonicalizing([
@@ -209,7 +209,7 @@ final class FormatsTest extends TestCase
         self::assertIsArray($header);
         $rows = [];
         while (false !== ($row = fgetcsv($stream, null, ',', '"', ''))) {
-            $rows[] = array_combine(array_map('strval', $header), array_map('strval', $row));
+            $rows[] = array_combine(array_map(strval(...), $header), array_map(strval(...), $row));
         }
 
         return $rows;

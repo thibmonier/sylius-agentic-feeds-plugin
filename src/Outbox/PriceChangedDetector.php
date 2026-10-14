@@ -32,8 +32,8 @@ final class PriceChangedDetector implements ChangeDetectorInterface
                 continue;
             }
             $changeSet = $unitOfWork->getEntityChangeSet($pricing);
-            $price = self::change($changeSet['price'] ?? null);
-            $original = self::change($changeSet['originalPrice'] ?? null);
+            $price = $this->change($changeSet['price'] ?? null);
+            $original = $this->change($changeSet['originalPrice'] ?? null);
             if (null === $price && null === $original) {
                 continue;
             }
@@ -61,7 +61,7 @@ final class PriceChangedDetector implements ChangeDetectorInterface
     }
 
     /** @return array{0: int|null, 1: int|null}|null [old, new] when the value really changed */
-    private static function change(mixed $change): ?array
+    private function change(mixed $change): ?array
     {
         if (!\is_array($change)) {
             return null;

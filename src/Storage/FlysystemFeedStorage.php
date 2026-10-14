@@ -7,9 +7,9 @@ namespace Tmonier\SyliusAgenticFeedsPlugin\Storage;
 use League\Flysystem\FilesystemOperator;
 
 /** Any Flysystem storage (S3, SFTP...), e.g. a league/flysystem-bundle storage service. */
-final class FlysystemFeedStorage implements FeedStorageInterface
+final readonly class FlysystemFeedStorage implements FeedStorageInterface
 {
-    public function __construct(private readonly FilesystemOperator $filesystem)
+    public function __construct(private FilesystemOperator $filesystem)
     {
     }
 

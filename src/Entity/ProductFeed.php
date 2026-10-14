@@ -143,7 +143,7 @@ class ProductFeed implements ProductFeedInterface
     {
         $lines = preg_split('/\R/', (string) $this->shippingRules) ?: [];
 
-        return array_values(array_filter(array_map('trim', $lines), static fn (string $line): bool => '' !== $line));
+        return array_values(array_filter(array_map(trim(...), $lines), static fn (string $line): bool => '' !== $line));
     }
 
     public function getShippingRulesText(): ?string

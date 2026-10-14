@@ -50,7 +50,7 @@ final class TestCatalog
     /** A channel of its own: en_US, EUR, hostname feeds-<suffix>.test, lowest prices of discounted products visible. */
     public function channel(): ChannelInterface
     {
-        if (null !== $this->channel) {
+        if ($this->channel instanceof \Sylius\Component\Core\Model\ChannelInterface) {
             return $this->channel;
         }
         $locale = $this->entityManager()->getRepository(LocaleInterface::class)->findOneBy(['code' => self::LOCALE]);
@@ -133,7 +133,7 @@ final class TestCatalog
         $product->setDescription($description);
         $product->setEnabled(true);
         $product->addChannel($channel);
-        if (null !== $taxon) {
+        if ($taxon instanceof \Sylius\Component\Core\Model\TaxonInterface) {
             /** @var FactoryInterface<ProductTaxonInterface> $productTaxonFactory */
             $productTaxonFactory = $this->container->get('sylius.factory.product_taxon');
             $productTaxon = $productTaxonFactory->createNew();
@@ -288,7 +288,7 @@ final class TestCatalog
         $taxon->setFallbackLocale(self::LOCALE);
         $taxon->setName($name);
         $taxon->setSlug(strtolower($name . '-' . $this->suffix));
-        if (null !== $parent) {
+        if ($parent instanceof \Sylius\Component\Core\Model\TaxonInterface) {
             $parent->addChild($taxon);
         }
         $this->entityManager()->persist($taxon);

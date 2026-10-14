@@ -45,7 +45,7 @@ final class GoogleFields
             'availability' => $item->availability,
             'price' => FeedItem::formatAmount($item->price, $item->currency),
             'sale_price' => null === $item->salePrice ? '' : FeedItem::formatAmount($item->salePrice, $item->currency),
-            'sale_price_effective_date' => null === $item->salePrice || null === $item->salePriceEnd ? '' : Dates::iso($item->salePriceStart ?? $context->now) . '/' . Dates::iso($item->salePriceEnd),
+            'sale_price_effective_date' => null === $item->salePrice || !$item->salePriceEnd instanceof \DateTimeInterface ? '' : Dates::iso($item->salePriceStart ?? $context->now) . '/' . Dates::iso($item->salePriceEnd),
             'brand' => (string) $item->brand,
             'gtin' => (string) $gtin,
             'mpn' => (string) $item->mpn,

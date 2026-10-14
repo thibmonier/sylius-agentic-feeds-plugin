@@ -54,7 +54,7 @@ final class StripeCsvFormat implements FeedFormatInterface
     public function validate(FeedItem $item): array
     {
         $issues = ItemValidator::validate($item, self::MAX, self::REQUIRED);
-        if (null !== $item->salePrice && null === $item->salePriceEnd) {
+        if (null !== $item->salePrice && !$item->salePriceEnd instanceof \DateTimeInterface) {
             $issues[] = Issue::warning(Issue::NO_SALE_END_DATE, 'sale_price');
         }
 
@@ -64,7 +64,7 @@ final class StripeCsvFormat implements FeedFormatInterface
     /** @return array<string, string> */
     public function map(FeedItem $item, FeedContext $context): array
     {
-        $sale = null !== $item->salePrice && null !== $item->salePriceEnd;
+        $sale = null !== $item->salePrice && $item->salePriceEnd instanceof \DateTimeInterface;
 
         return [
             'id' => $item->id,

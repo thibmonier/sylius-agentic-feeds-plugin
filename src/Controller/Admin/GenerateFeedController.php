@@ -17,13 +17,13 @@ use Tmonier\SyliusAgenticFeedsPlugin\Message\GenerateFeed;
 use Tmonier\SyliusAgenticFeedsPlugin\Repository\ProductFeedRepositoryInterface;
 
 /** "Generate now": dispatched on the bus (handled synchronously unless you route it to a worker). */
-final class GenerateFeedController
+final readonly class GenerateFeedController
 {
     public function __construct(
-        private readonly ProductFeedRepositoryInterface $feedRepository,
-        private readonly MessageBusInterface $bus,
-        private readonly CsrfTokenManagerInterface $csrfTokenManager,
-        private readonly UrlGeneratorInterface $urlGenerator,
+        private ProductFeedRepositoryInterface $feedRepository,
+        private MessageBusInterface $bus,
+        private CsrfTokenManagerInterface $csrfTokenManager,
+        private UrlGeneratorInterface $urlGenerator,
     ) {
     }
 

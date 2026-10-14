@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tmonier\SyliusAgenticFeedsPlugin\Controller;
 
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Tmonier\SyliusAgenticFeedsPlugin\Format\FormatRegistry;
@@ -17,20 +16,20 @@ use Tmonier\SyliusAgenticFeedsPlugin\Storage\FeedStorageInterface;
  * /feeds/stripe/inventory). A feed with an access token answers 404 without it (query
  * "token" or header X-Feed-Token), like a missing or disabled feed.
  */
-final class FeedDownloadController
+final readonly class FeedDownloadController
 {
     public function __construct(
-        private readonly ProductFeedRepositoryInterface $feedRepository,
-        private readonly FormatRegistry $formats,
-        private readonly FeedStorageInterface $storage,
+        private ProductFeedRepositoryInterface $feedRepository,
+        private FormatRegistry $formats,
+        private FeedStorageInterface $storage,
     ) {
     }
 
-    public function __invoke(Request $request, string $code, string $role = 'main'): Response
+    public function __invoke(Request $request, string $code, string $role = 'main'): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         $feed = $this->feedRepository->findOneByCode($code);
         // Feeds of a disabled channel list products whose links no longer work: not served.
-        if (null === $feed || !$feed->isEnabled() || true !== $feed->getChannel()?->isEnabled() || !$this->formats->has((string) $feed->getFormat())) {
+        if (!$feed instanceof \Tmonier\SyliusAgenticFeedsPlugin\Entity\ProductFeedInterface || !$feed->isEnabled() || true !== $feed->getChannel()?->isEnabled() || !$this->formats->has((string) $feed->getFormat())) {
             throw new NotFoundHttpException();
         }
         $token = $feed->getAccessToken();
@@ -45,7 +44,7 @@ final class FeedDownloadController
         }
         $path = FormatRegistry::fileName($code, $suffix);
         $modified = $this->storage->lastModified($path);
-        if (null === $modified) {
+        if (!$modified instanceof \DateTimeImmutable) {
             throw new NotFoundHttpException();
         }
 

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tmonier\SyliusAgenticFeedsPlugin\Validation;
 
 /** A finding on one item; errors leave the item out of the file, warnings do not. */
-final class Issue
+final readonly class Issue
 {
     public const ERROR = 'error';
 
@@ -39,10 +39,10 @@ final class Issue
 
     /** @param array<string, string|int> $parameters */
     public function __construct(
-        public readonly string $severity,
-        public readonly string $code,
-        public readonly ?string $field = null,
-        public readonly array $parameters = [],
+        public string $severity,
+        public string $code,
+        public ?string $field = null,
+        public array $parameters = [],
     ) {
     }
 

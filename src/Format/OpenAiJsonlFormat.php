@@ -17,7 +17,7 @@ use Tmonier\SyliusAgenticFeedsPlugin\Validation\ItemValidator;
  * OpenAI; the file is delivered by SFTP (not done by this plugin). Checkout eligibility is
  * always false: buyers are sent to the shop.
  */
-final class OpenAiJsonlFormat implements FeedFormatInterface
+final readonly class OpenAiJsonlFormat implements FeedFormatInterface
 {
     public const CODE = 'openai_jsonl';
 
@@ -26,7 +26,7 @@ final class OpenAiJsonlFormat implements FeedFormatInterface
     public const REQUIRED = ['title', 'description', 'link', 'image', 'brand'];
 
     /** @param array<string, array{return_policy: ?string, privacy_policy: ?string, terms: ?string, return_days: ?int}> $sellerPolicies by channel code */
-    public function __construct(private readonly array $sellerPolicies = [])
+    public function __construct(private array $sellerPolicies = [])
     {
     }
 

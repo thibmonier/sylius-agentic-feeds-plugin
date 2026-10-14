@@ -8,25 +8,25 @@ use Sylius\Component\Core\Model\ChannelInterface;
 use Tmonier\SyliusAgenticFeedsPlugin\Entity\ProductFeedInterface;
 
 /** What a feed is built for: channel, locale, currency, target country, format, shipping entries. */
-final class FeedContext
+final readonly class FeedContext
 {
     /** @param list<string> $shippingRules */
     public function __construct(
-        public readonly ChannelInterface $channel,
-        public readonly string $localeCode,
-        public readonly string $currencyCode,
-        public readonly ?string $countryCode,
-        public readonly string $format,
-        public readonly \DateTimeImmutable $now,
+        public ChannelInterface $channel,
+        public string $localeCode,
+        public string $currencyCode,
+        public ?string $countryCode,
+        public string $format,
+        public \DateTimeImmutable $now,
         /** Stripe shipping entries "country:delivery_area:service:speed_range:price" of the feed. */
-        public readonly array $shippingRules = [],
+        public array $shippingRules = [],
     ) {
     }
 
     public static function fromFeed(ProductFeedInterface $feed, ?\DateTimeImmutable $now = null): self
     {
         $channel = $feed->getChannel();
-        if (null === $channel) {
+        if (!$channel instanceof \Sylius\Component\Core\Model\ChannelInterface) {
             throw new \InvalidArgumentException(sprintf('Feed "%s" has no channel.', (string) $feed->getCode()));
         }
 
