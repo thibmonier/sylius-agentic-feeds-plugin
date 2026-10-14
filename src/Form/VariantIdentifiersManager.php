@@ -71,13 +71,13 @@ final class VariantIdentifiersManager
         $mpn = null === $mpn || '' === trim($mpn) ? null : trim($mpn);
         $identifiers = $this->repository->findOneByVariant($variant);
         if (null === $gtin && null === $mpn) {
-            if (null !== $identifiers) {
+            if ($identifiers instanceof \Tmonier\SyliusAgenticFeedsPlugin\Entity\VariantIdentifiersInterface) {
                 $this->entityManager->remove($identifiers);
             }
 
             return;
         }
-        if (null === $identifiers) {
+        if (!$identifiers instanceof \Tmonier\SyliusAgenticFeedsPlugin\Entity\VariantIdentifiersInterface) {
             $identifiers = $this->factory->createNew();
             $identifiers->setVariant($variant);
             $this->entityManager->persist($identifiers);

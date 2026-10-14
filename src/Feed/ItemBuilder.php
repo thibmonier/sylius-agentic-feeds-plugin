@@ -57,7 +57,7 @@ final class ItemBuilder
     {
         $product = $variant->getProduct();
         $pricing = $variant->getChannelPricingForChannel($context->channel);
-        if (!$product instanceof ProductInterface || null === $pricing || null === $pricing->getPrice()) {
+        if (!$product instanceof ProductInterface || !$pricing instanceof \Sylius\Component\Core\Model\ChannelPricingInterface || null === $pricing->getPrice()) {
             return null;
         }
         $locale = $context->localeCode;
@@ -94,7 +94,7 @@ final class ItemBuilder
             $this->attribute($product, $this->attributes['brand'], $locale) ?? $this->defaultBrand,
             $this->condition,
             $this->productType($product->getMainTaxon(), $locale),
-            null === $variant->getWeight() || $variant->getWeight() <= 0 ? null : (float) $variant->getWeight(),
+            null === $variant->getWeight() || $variant->getWeight() <= 0 ? null : $variant->getWeight(),
             $this->options($variant, $locale),
             $hasVariants,
             $context->channel->getName(),
@@ -105,7 +105,7 @@ final class ItemBuilder
             $title[1] || $description[1],
             $variant->isShippingRequired(),
             $sharedIgnored,
-            null === $context->channel->getDefaultTaxZone(),
+            !$context->channel->getDefaultTaxZone() instanceof \Sylius\Component\Addressing\Model\ZoneInterface,
         );
     }
 
@@ -178,8 +178,8 @@ final class ItemBuilder
                     if (!$promotion instanceof CatalogPromotionInterface) {
                         continue;
                     }
-                    $start = self::latest($start, $promotion->getStartDate());
-                    $end = self::earliest($end, $promotion->getEndDate());
+                    $start = $this->latest($start, $promotion->getStartDate());
+                    $end = $this->earliest($end, $promotion->getEndDate());
                 }
             }
         }
@@ -206,7 +206,7 @@ final class ItemBuilder
     private function tax(ProductVariantInterface $variant, FeedContext $context): array
     {
         $zone = $context->channel->getDefaultTaxZone();
-        if (null === $zone) {
+        if (!$zone instanceof \Sylius\Component\Addressing\Model\ZoneInterface) {
             // Unknown: reported (tax_unknown) and treated as excluded (never claim an included tax).
             return [false, null];
         }
@@ -216,13 +216,13 @@ final class ItemBuilder
         }
 
         // No rate: the displayed price is the final price.
-        return [null === $rate || $rate->isIncludedInPrice(), $rate];
+        return [!$rate instanceof \Sylius\Component\Taxation\Model\TaxRateInterface || $rate->isIncludedInPrice(), $rate];
     }
 
     /** US/CA feeds: the tax included in the displayed price is removed; otherwise the displayed price. */
     private function forTarget(int $amount, ?TaxRateInterface $rate, bool $taxIncluded): int
     {
-        if ($taxIncluded || null === $rate || !$rate->isIncludedInPrice()) {
+        if ($taxIncluded || !$rate instanceof \Sylius\Component\Taxation\Model\TaxRateInterface || !$rate->isIncludedInPrice()) {
             return $amount;
         }
 
@@ -277,7 +277,7 @@ final class ItemBuilder
         $links = [];
         foreach ($images as $image) {
             if ($image instanceof ProductImageInterface && null !== $image->getPath() && '' !== $image->getPath()) {
-                $links[] = $this->baseUrl($context) . '/media/image/' . ltrim((string) $image->getPath(), '/');
+                $links[] = $this->baseUrl($context) . '/media/image/' . ltrim($image->getPath(), '/');
             }
         }
         $links = array_values(array_unique($links));
@@ -300,7 +300,7 @@ final class ItemBuilder
 
     private function productType(?TaxonInterface $taxon, string $locale): ?string
     {
-        if (null === $taxon) {
+        if (!$taxon instanceof \Sylius\Component\Core\Model\TaxonInterface) {
             return null;
         }
         $names = [];
@@ -344,13 +344,13 @@ final class ItemBuilder
         return null;
     }
 
-    private static function latest(?\DateTimeInterface $current, ?\DateTimeInterface $candidate): ?\DateTimeInterface
+    private function latest(?\DateTimeInterface $current, ?\DateTimeInterface $candidate): ?\DateTimeInterface
     {
-        return null === $candidate || (null !== $current && $current >= $candidate) ? $current : $candidate;
+        return !$candidate instanceof \DateTimeInterface || ($current instanceof \DateTimeInterface && $current >= $candidate) ? $current : $candidate;
     }
 
-    private static function earliest(?\DateTimeInterface $current, ?\DateTimeInterface $candidate): ?\DateTimeInterface
+    private function earliest(?\DateTimeInterface $current, ?\DateTimeInterface $candidate): ?\DateTimeInterface
     {
-        return null === $candidate || (null !== $current && $current <= $candidate) ? $current : $candidate;
+        return !$candidate instanceof \DateTimeInterface || ($current instanceof \DateTimeInterface && $current <= $candidate) ? $current : $candidate;
     }
 }

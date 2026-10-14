@@ -220,7 +220,7 @@ final class FeedGeneratorTest extends KernelTestCase
         $header = str_getcsv($lines[0], ',', '"', '');
         $row = str_getcsv($lines[1] ?? '', ',', '"', '');
 
-        return array_combine(array_map('strval', $header), array_map('strval', array_pad($row, \count($header), '')));
+        return array_combine(array_map(strval(...), $header), array_map(strval(...), array_pad($row, \count($header), '')));
     }
 
     public function testStockAndExcludedVariants(): void

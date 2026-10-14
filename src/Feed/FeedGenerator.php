@@ -25,7 +25,7 @@ use Tmonier\SyliusAgenticFeedsPlugin\Validation\Issue;
  * in batches (the entity manager is cleared between batches). Items with errors are left out
  * and reported; the files replace the previous ones only when the generation succeeds.
  */
-final class FeedGenerator
+final readonly class FeedGenerator
 {
     /** Issues stored for the admin report (the counts cover all of them). */
     private const STORED_ISSUES = 5000;
@@ -35,15 +35,15 @@ final class FeedGenerator
      * @param ExchangeRateRepositoryInterface<ExchangeRateInterface> $exchangeRateRepository
      */
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
-        private readonly ItemBuilder $itemBuilder,
-        private readonly FormatRegistry $formats,
-        private readonly FeedStorageInterface $storage,
-        private readonly FeedIssueRepositoryInterface $issueRepository,
-        private readonly FactoryInterface $issueFactory,
-        private readonly LoggerInterface $logger,
-        private readonly ExchangeRateRepositoryInterface $exchangeRateRepository,
-        private readonly int $batchSize = 100,
+        private EntityManagerInterface $entityManager,
+        private ItemBuilder $itemBuilder,
+        private FormatRegistry $formats,
+        private FeedStorageInterface $storage,
+        private FeedIssueRepositoryInterface $issueRepository,
+        private FactoryInterface $issueFactory,
+        private LoggerInterface $logger,
+        private ExchangeRateRepositoryInterface $exchangeRateRepository,
+        private int $batchSize = 100,
     ) {
     }
 
@@ -78,7 +78,7 @@ final class FeedGenerator
                 $this->itemBuilder->primeIdentifiers($ids);
                 foreach ($this->variants($ids) as $variant) {
                     $item = $this->itemBuilder->build($variant, $context);
-                    if (null === $item) {
+                    if (!$item instanceof \Tmonier\SyliusAgenticFeedsPlugin\Feed\FeedItem) {
                         $result->add(Issue::error(Issue::MISSING_PRICE, 'price'), (string) $variant->getCode(), $variant->getProduct()?->getCode());
 
                         continue;
@@ -155,7 +155,7 @@ final class FeedGenerator
             throw new \RuntimeException(sprintf('The channel "%s" is disabled.', (string) $context->channel->getCode()));
         }
         $base = (string) $context->channel->getBaseCurrency()?->getCode();
-        if ($base !== $context->currencyCode && null === $this->exchangeRateRepository->findOneWithCurrencyPair($base, $context->currencyCode)) {
+        if ($base !== $context->currencyCode && !$this->exchangeRateRepository->findOneWithCurrencyPair($base, $context->currencyCode) instanceof \Sylius\Component\Currency\Model\ExchangeRateInterface) {
             throw new \RuntimeException(sprintf('No exchange rate between %s and %s: prices cannot be converted.', $base, $context->currencyCode));
         }
         foreach ($format->validateFeed($context) as $issue) {
@@ -223,7 +223,7 @@ final class FeedGenerator
         $feed->recordGeneration(new \DateTime(), $result->status(), $result->items(), $result->errorCount(), $result->warningCount(), $result->durationMs(), $result->failure());
         if (!$result->failed()) {
             // A change during the generation (staleSince at or after the start) keeps it stale.
-            if (null === $feed->getStaleSince() || $feed->getStaleSince() < $startedAt) {
+            if (!$feed->getStaleSince() instanceof \DateTimeInterface || $feed->getStaleSince() < $startedAt) {
                 $feed->setStaleSince(null);
             }
             $this->issueRepository->deleteByFeed($feed);

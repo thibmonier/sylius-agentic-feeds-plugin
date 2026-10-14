@@ -51,7 +51,7 @@ final class ProductFeedFixture extends AbstractFixture
             }
             foreach (self::FORMATS as $prefix => $format) {
                 $code = strtolower(sprintf('%s_%s', $prefix, (string) $channel->getCode()));
-                if (null !== $this->feedRepository->findOneByCode($code)) {
+                if ($this->feedRepository->findOneByCode($code) instanceof \Tmonier\SyliusAgenticFeedsPlugin\Entity\ProductFeedInterface) {
                     continue;
                 }
                 $feed = $this->feedFactory->createNew();

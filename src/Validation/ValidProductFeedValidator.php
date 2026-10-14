@@ -42,7 +42,7 @@ final class ValidProductFeedValidator extends ConstraintValidator
             $this->context->buildViolation('tmonier_agentic_feeds.product_feed.shipping_rules.required')->atPath('shippingRulesText')->addViolation();
         }
         $channel = $value->getChannel();
-        if (null === $channel) {
+        if (!$channel instanceof \Sylius\Component\Core\Model\ChannelInterface) {
             return;
         }
         $locales = [];
@@ -60,7 +60,7 @@ final class ValidProductFeedValidator extends ConstraintValidator
         $currencies[] = $base;
         if (!\in_array($value->getCurrencyCode(), $currencies, true)) {
             $this->context->buildViolation('tmonier_agentic_feeds.product_feed.currency.not_in_channel')->atPath('currencyCode')->addViolation();
-        } elseif (null !== $base && $base !== $value->getCurrencyCode() && null === $this->exchangeRateRepository->findOneWithCurrencyPair($base, (string) $value->getCurrencyCode())) {
+        } elseif (null !== $base && $base !== $value->getCurrencyCode() && !$this->exchangeRateRepository->findOneWithCurrencyPair($base, (string) $value->getCurrencyCode()) instanceof \Sylius\Component\Currency\Model\ExchangeRateInterface) {
             // Without a rate Sylius would publish the amounts unconverted.
             $this->context->buildViolation('tmonier_agentic_feeds.product_feed.currency.no_exchange_rate')->atPath('currencyCode')->addViolation();
         }

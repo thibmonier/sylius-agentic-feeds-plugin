@@ -43,7 +43,7 @@ final class GenerateFeedsCommand extends Command
         $feeds = [];
         foreach ($codes as $code) {
             $feed = $this->feedRepository->findOneByCode($code);
-            if (null === $feed) {
+            if (!$feed instanceof \Tmonier\SyliusAgenticFeedsPlugin\Entity\ProductFeedInterface) {
                 $io->error(sprintf('Unknown feed "%s".', $code));
 
                 return Command::FAILURE;
@@ -54,7 +54,7 @@ final class GenerateFeedsCommand extends Command
             $feeds = $this->feedRepository->findEnabled();
         }
         if ((bool) $input->getOption('stale')) {
-            $feeds = array_values(array_filter($feeds, static fn (ProductFeedInterface $feed): bool => null !== $feed->getStaleSince() || null === $feed->getLastGeneratedAt()));
+            $feeds = array_values(array_filter($feeds, static fn (ProductFeedInterface $feed): bool => $feed->getStaleSince() instanceof \DateTimeInterface || !$feed->getLastGeneratedAt() instanceof \DateTimeInterface));
         }
 
         $dryRun = (bool) $input->getOption('dry-run');

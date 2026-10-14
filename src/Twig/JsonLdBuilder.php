@@ -21,13 +21,13 @@ use Tmonier\SyliusAgenticFeedsPlugin\Validation\Gtin;
  * tax rules, a sale only with the 30-day reference price (priceValidUntil = end of the
  * catalog promotion).
  */
-final class JsonLdBuilder
+final readonly class JsonLdBuilder
 {
     public function __construct(
-        private readonly ItemBuilder $itemBuilder,
-        private readonly ChannelContextInterface $channelContext,
-        private readonly LocaleContextInterface $localeContext,
-        private readonly CurrencyContextInterface $currencyContext,
+        private ItemBuilder $itemBuilder,
+        private ChannelContextInterface $channelContext,
+        private LocaleContextInterface $localeContext,
+        private CurrencyContextInterface $currencyContext,
     ) {
     }
 
@@ -44,7 +44,7 @@ final class JsonLdBuilder
         foreach ($product->getEnabledVariants() as $variant) {
             if ($variant instanceof ProductVariantInterface) {
                 $item = $this->itemBuilder->build($variant, $context);
-                if (null !== $item) {
+                if ($item instanceof \Tmonier\SyliusAgenticFeedsPlugin\Feed\FeedItem) {
                     $items[] = $item;
                 }
             }
@@ -96,7 +96,7 @@ final class JsonLdBuilder
         if ($item->hasVariants) {
             $offer['name'] = $item->title;
         }
-        if (null !== $item->salePrice && null !== $item->salePriceEnd) {
+        if (null !== $item->salePrice && $item->salePriceEnd instanceof \DateTimeInterface) {
             $offer['priceValidUntil'] = $item->salePriceEnd->format('Y-m-d');
         }
         $gtin = Gtin::normalize($item->gtin);

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Tmonier\SyliusAgenticFeedsPlugin\Storage;
 
 /** Files in a local directory (default var/agentic_feeds), written to a temporary file then renamed. */
-final class LocalFeedStorage implements FeedStorageInterface
+final readonly class LocalFeedStorage implements FeedStorageInterface
 {
-    public function __construct(private readonly string $directory)
+    public function __construct(private string $directory)
     {
     }
 

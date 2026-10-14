@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tmonier\SyliusAgenticFeedsPlugin\EventListener;
 
 use Doctrine\ORM\Event\OnFlushEventArgs;
-use Doctrine\ORM\Event\PostFlushEventArgs;
 use Sylius\Component\Core\Model\ChannelPricingInterface;
 use Sylius\Component\Core\Model\ProductImageInterface;
 use Sylius\Component\Core\Model\ProductInterface;
@@ -52,7 +51,7 @@ final class CatalogChangeListener
         }
     }
 
-    public function postFlush(PostFlushEventArgs $args): void
+    public function postFlush(): void
     {
         if (!$this->changed) {
             return;

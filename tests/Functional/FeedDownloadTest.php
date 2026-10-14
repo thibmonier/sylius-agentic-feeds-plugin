@@ -30,7 +30,7 @@ final class FeedDownloadTest extends WebTestCase
         self::assertResponseHeaderSame('Content-Type', 'application/xml; charset=UTF-8');
         self::assertResponseHeaderSame('X-Robots-Tag', 'noindex');
         $lastModified = (string) $this->client->getResponse()->headers->get('Last-Modified');
-        self::assertStringContainsString('PUBLIC_' . $this->catalog->suffix, (string) $this->client->getInternalResponse()->getContent());
+        self::assertStringContainsString('PUBLIC_' . $this->catalog->suffix, $this->client->getInternalResponse()->getContent());
 
         $this->client->request('GET', '/feeds/' . $code, server: ['HTTP_IF_MODIFIED_SINCE' => $lastModified]);
         self::assertResponseStatusCodeSame(304);
@@ -65,7 +65,7 @@ final class FeedDownloadTest extends WebTestCase
         $this->client->request('GET', '/feeds/' . $code . '/pricing?token=' . $token);
         self::assertResponseIsSuccessful();
         self::assertResponseHeaderSame('Content-Type', 'text/csv; charset=UTF-8');
-        self::assertStringStartsWith('id,price,sale_price,sale_price_effective_date', (string) $this->client->getInternalResponse()->getContent());
+        self::assertStringStartsWith('id,price,sale_price,sale_price_effective_date', $this->client->getInternalResponse()->getContent());
         self::assertStringContainsString('private', (string) $this->client->getResponse()->headers->get('Cache-Control'));
 
         $this->client->request('GET', '/feeds/' . $code, server: ['HTTP_X_FEED_TOKEN' => $token]);
