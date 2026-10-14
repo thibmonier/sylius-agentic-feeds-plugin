@@ -198,6 +198,8 @@ final class AdminTest extends WebTestCase
         $collector = $profile->getCollector('db');
         self::assertInstanceOf(DoctrineDataCollector::class, $collector);
         // The collector also holds the queries of the generations above: only those of the grid count.
+        // Match "FROM <issue table>": on PostgreSQL the generations also run
+        // "SELECT NEXTVAL('tmonier_agentic_feed_issue_id_seq')", which must not start the grid part.
         $feedLoads = [];
         $grid = false;
         $joined = false;
@@ -207,7 +209,7 @@ final class AdminTest extends WebTestCase
                 self::assertIsArray($query);
                 $sql = $query['sql'] ?? null;
                 self::assertIsString($sql);
-                $grid = $grid || (str_starts_with($sql, 'SELECT') && str_contains($sql, 'tmonier_agentic_feed_issue'));
+                $grid = $grid || (str_starts_with($sql, 'SELECT') && str_contains($sql, 'FROM tmonier_agentic_feed_issue '));
                 $joined = $joined || ($grid && str_contains($sql, 'INNER JOIN tmonier_agentic_feed '));
                 if ($grid && 1 === preg_match('/FROM tmonier_agentic_feed \w+ WHERE \w+\.id = \?/', $sql)) {
                     $feedLoads[] = $sql;
