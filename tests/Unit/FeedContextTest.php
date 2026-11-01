@@ -60,7 +60,7 @@ final class FeedContextTest extends TestCase
         $feed->setCurrencyCode('CHF');
         $feed->setCountryCode('CH');
         $feed->setFormat('google_xml');
-        $feed->setShippingRulesText("CH:national:standard:5-7:500");
+        $feed->setShippingRulesText('CH:national:standard:5-7:500');
 
         $now = new \DateTimeImmutable('2026-11-01 10:00:00');
         $context = FeedContext::fromFeed($feed, $now);

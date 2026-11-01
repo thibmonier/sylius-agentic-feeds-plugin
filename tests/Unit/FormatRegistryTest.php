@@ -11,7 +11,6 @@ use Tmonier\SyliusAgenticFeedsPlugin\Feed\FeedItem;
 use Tmonier\SyliusAgenticFeedsPlugin\Format\FeedFormatInterface;
 use Tmonier\SyliusAgenticFeedsPlugin\Format\FeedWriterInterface;
 use Tmonier\SyliusAgenticFeedsPlugin\Format\FormatRegistry;
-use Tmonier\SyliusAgenticFeedsPlugin\Validation\Issue;
 
 final class FormatRegistryTest extends TestCase
 {
@@ -73,7 +72,7 @@ final class FormatRegistryTest extends TestCase
 
     private function stubFormat(string $code): FeedFormatInterface
     {
-        return new class ($code) implements FeedFormatInterface {
+        return new class($code) implements FeedFormatInterface {
             public function __construct(private readonly string $code)
             {
             }
